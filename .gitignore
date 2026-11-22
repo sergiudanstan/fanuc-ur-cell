@@ -1,0 +1,5 @@
+media/
+shots/
+*.mp4
+.DS_Store
+runner.out

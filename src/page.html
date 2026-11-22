@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>FANUC LR Mate + UR5e Assembly Cell</title>
+<meta name="description" content="Digital twin of a hybrid industrial and collaborative gear-motor assembly cell: FANUC LR Mate 200iD/7L, UR5e cobot, conveyor line tracking, safety scanner, and fixture interlocks.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --panel: #ffffff;
+    --panel-2: #eceef2;
+    --ink: #171a1f;
+    --muted: #525965;
+    --faint: #848c99;
+    --line: #d8dce3;
+    --accent: #d97706;
+    --accent-soft: #fef3c7;
+    --fanuc: #d99b00;
+    --fanuc-soft: #fef5d6;
+    --ur: #1d6fb8;
+    --ur-soft: #e0effc;
+    --conv: #4d5b66;
+    --conv-soft: #e7ebee;
+    --op: #2b8a57;
+    --op-soft: #dff5e8;
+    --bad: #c8312b;
+    --bad-soft: #fbe5e3;
+    --good: #22863a;
+    --scene-top: #f7f8fa;
+    --scene-bottom: #dfe3e8;
+    --shadow: 0 1px 2px rgba(23, 26, 31, 0.08), 0 3px 10px rgba(23, 26, 31, 0.06);
+    --display: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --ui: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111317;
+      --panel: #191c22;
+      --panel-2: #22262e;
+      --ink: #e8ecf2;
+      --muted: #a2aab8;
+      --faint: #707988;
+      --line: #303642;
+      --accent: #f59e0b;
+      --accent-soft: #382912;
+      --fanuc: #f5b800;
+      --fanuc-soft: #382c0e;
+      --ur: #58a6ff;
+      --ur-soft: #1a2d44;
+      --conv: #94a3b8;
+      --conv-soft: #252c35;
+      --op: #4ade80;
+      --op-soft: #143322;
+      --bad: #ff7b72;
+      --bad-soft: #43201e;
+      --good: #56d364;
+      --scene-top: #21252d;
+      --scene-bottom: #0f1115;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 3px 10px rgba(0, 0, 0, 0.35);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #111317;
+    --panel: #191c22;
+    --panel-2: #22262e;
+    --ink: #e8ecf2;
+    --muted: #a2aab8;
+    --faint: #707988;
+    --line: #303642;
+    --accent: #f59e0b;
+    --accent-soft: #382912;
+    --fanuc: #f5b800;
+    --fanuc-soft: #382c0e;
+    --ur: #58a6ff;
+    --ur-soft: #1a2d44;
+    --conv: #94a3b8;
+    --conv-soft: #252c35;
+    --op: #4ade80;
+    --op-soft: #143322;
+    --bad: #ff7b72;
+    --bad-soft: #43201e;
+    --good: #56d364;
+    --scene-top: #21252d;
+    --scene-bottom: #0f1115;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 3px 10px rgba(0, 0, 0, 0.35);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--ink);
+    font: 400 14px/1.45 var(--ui);
+    -webkit-font-smoothing: antialiased;
+  }
+  button, select, input { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  header {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+  }
+  .mark {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 9px;
+    background: #1c222b;
+    display: grid;
+    place-items: center;
+  }
+  .mark svg { width: 28px; height: 28px; }
+  .title { min-width: 0; line-height: 1.15; }
+  .title small {
+    display: block;
+    font: 600 11px var(--ui);
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .title h1 {
+    margin: 0;
+    font: 700 20px var(--display);
+    letter-spacing: -0.01em;
+  }
+  .title h1 .f { color: var(--fanuc); }
+  .title h1 .u { color: var(--ur); }
+
+  .mode-switch {
+    margin-left: auto;
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--panel-2);
+  }
+  .mode-switch button {
+    border: 0;
+    background: none;
+    cursor: pointer;
+    padding: 5px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .mode-switch button[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--bg);
+  }
+  .icon-btn {
+    flex: none;
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--panel);
+    cursor: pointer;
+  }
+  .icon-btn:hover { border-color: var(--faint); }
+  .icon-btn svg { width: 18px; height: 18px; }
+
+  .app { position: relative; flex: 1; min-height: 0; display: flex; }
+  .rail {
+    flex: none;
+    width: 68px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 6px;
+    border-right: 1px solid var(--line);
+    background: var(--panel);
+    overflow-y: auto;
+  }
+  .rail-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 2px;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 10.5px;
+    font-weight: 500;
+  }
+  .rail-item svg { width: 20px; height: 20px; }
+  .rail-item:hover { background: var(--panel-2); color: var(--ink); }
+  .rail-item[aria-pressed="true"] {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .drawer {
+    flex: none;
+    width: 330px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    overflow-y: auto;
+    border-right: 1px solid var(--line);
+    background: var(--panel-2);
+  }
+  .drawer[hidden] { display: none; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: var(--shadow);
+  }
+  .card h2 {
+    margin: 0 0 10px;
+    font: 600 12px var(--display);
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .card h2 span {
+    font: 400 11px var(--mono);
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--faint);
+  }
+  .card h2 .close {
+    margin-left: auto;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    color: var(--faint);
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 2px;
+  }
+
+  .stage { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--panel); }
+  .viewport { position: relative; flex: 1; min-height: 0; }
+  .viewport canvas.main { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .overlay { position: absolute; }
+  .glass {
+    background: color-mix(in srgb, var(--panel) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--line);
+    border-radius: 11px;
+  }
+  .now {
+    top: 12px;
+    left: 12px;
+    width: min(390px, calc(100% - 24px));
+    padding: 10px 12px;
+    display: grid;
+    gap: 5px;
+  }
+  .now-row {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: 8px;
+    align-items: baseline;
+  }
+  .now-row .what { min-width: 0; }
+  .now-row b { font-weight: 600; }
+  .now-row code {
+    display: block;
+    font: 400 11px var(--mono);
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .chip {
+    justify-self: start;
+    font: 600 10px var(--mono);
+    letter-spacing: 0.05em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .chip.conv { background: var(--conv-soft); color: var(--conv); }
+  .chip.fanuc { background: var(--fanuc-soft); color: var(--fanuc); }
+  .chip.ur { background: var(--ur-soft); color: var(--ur); }
+  .chip.op { background: var(--op-soft); color: var(--op); }
+
+  .toolbar {
+    top: 12px;
+    right: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+  .views {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 2px;
+    padding: 4px;
+    max-width: 390px;
+  }
+  .views button {
+    border: 0;
+    background: none;
+    cursor: pointer;
+    padding: 5px 9px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+  }
+  .views button:hover { color: var(--ink); }
+  .views button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  .hint { right: 12px; bottom: 10px; font-size: 11px; color: var(--faint); }
+  .zone-legend {
+    left: 12px;
+    bottom: 10px;
+    padding: 6px 10px;
+    font-size: 12px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .zone-legend span { display: inline-flex; gap: 6px; align-items: center; }
+  .zone-legend i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    background: var(--faint);
+  }
+  .load-error {
+    position: absolute;
+    inset: 0;
+    display: none;
+    place-items: center;
+    text-align: center;
+    padding: 24px;
+    color: var(--muted);
+  }
+
+  .transport {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 14px;
+    border-top: 1px solid var(--line);
+    background: var(--panel-2);
+  }
+  .play {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    border: 0;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+  }
+  .play svg { width: 18px; height: 18px; }
+  .timeline {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    height: 50px;
+    cursor: pointer;
+    touch-action: none;
+  }
+  .timeline canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .playhead {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    margin-left: -1px;
+    background: var(--accent);
+    pointer-events: none;
+  }
+  .clock { flex: none; font-size: 13px; color: var(--muted); min-width: 96px; text-align: right; }
+  .clock b { color: var(--ink); font-weight: 500; }
+  .chips {
+    flex: none;
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--panel);
+  }
+  .chips button {
+    border: 0;
+    background: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .chips button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  .toggle {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+  }
+  .toggle input { accent-color: var(--accent); margin: 0; }
+
+  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .stat { background: var(--panel-2); border-radius: 10px; padding: 9px 10px; min-width: 0; }
+  .stat small { display: block; font-size: 11px; color: var(--muted); }
+  .stat .value { font: 500 18px var(--mono); margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .stat .value em { font-style: normal; font-size: 11px; color: var(--faint); margin-left: 2px; }
+  .stat .sub { font-size: 11px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kv { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; margin: 0; font-size: 13px; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .belt-row { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; }
+  .belt-row input[type="range"] { flex: 1; accent-color: var(--accent); min-width: 0; }
+  .belt-row input[type="number"] {
+    width: 72px;
+    padding: 3px 6px;
+    text-align: right;
+    font: 500 12px var(--mono);
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    color: var(--ink);
+  }
+  .program { list-style: none; margin: 0; padding: 0; max-height: 360px; overflow-y: auto; }
+  .program li {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 2px 8px;
+    align-items: baseline;
+    padding: 6px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .program li:hover { background: var(--panel-2); }
+  .program li.active { background: var(--panel-2); box-shadow: inset 2px 0 0 var(--accent); }
+  .program li.done .label { color: var(--faint); }
+  .program li .fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 0;
+    background: var(--accent-soft);
+    pointer-events: none;
+  }
+  .program li .label { font-weight: 600; }
+  .program li .dur { font: 11px var(--mono); color: var(--faint); }
+  .program li code { grid-column: 1 / -1; font: 11px var(--mono); color: var(--muted); }
+  .joints { display: grid; gap: 7px; }
+  .joints h3 { margin: 8px 0 0; font: 600 12px var(--ui); letter-spacing: 0; text-transform: none; color: var(--muted); }
+  .joint { display: grid; grid-template-columns: 34px 1fr 72px; gap: 8px; align-items: center; font-size: 12px; }
+  .joint .track { position: relative; height: 8px; border-radius: 99px; background: var(--panel-2); }
+  .joint .track i {
+    position: absolute;
+    top: -3px;
+    width: 4px;
+    height: 14px;
+    margin-left: -2px;
+    border-radius: 2px;
+    background: var(--ink);
+  }
+  .joint .track.near i { background: var(--bad); }
+  .joint .v { font: 500 12px var(--mono); text-align: right; color: var(--muted); }
+  .tcp { display: grid; grid-template-columns: auto repeat(3, 1fr); gap: 4px 8px; align-items: end; margin-bottom: 12px; }
+  .tcp small { display: block; color: var(--faint); font-size: 10px; }
+  .tcp b { font: 500 14px var(--mono); }
+  #gantt svg, #whatif-chart svg { width: 100%; height: auto; display: block; }
+  #gantt text, #whatif-chart text { font-family: var(--ui); }
+  .gantt-legend { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .gantt-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .kv .ok, .stat.ok .value { color: var(--good); }
+  .kv .warn, .stat.warn .value { color: var(--accent); }
+  .kv .bad, .stat.bad .value { color: var(--bad); }
+  .chip.camera { background: var(--conv-soft); color: var(--conv); }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .btn {
+    padding: 7px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--panel-2);
+  }
+  .small-note { margin: 8px 0 0; font-size: 11.5px; color: var(--faint); }
+
+  html.shot-mode header,
+  html.shot-mode .rail,
+  html.shot-mode .drawer,
+  html.shot-mode .transport,
+  html.shot-mode .overlay { display: none !important; }
+
+  @media (max-width: 900px) {
+    .hint { display: none; }
+    .drawer { position: absolute; z-index: 15; top: 0; bottom: 0; left: 68px; width: min(330px, calc(100vw - 80px)); box-shadow: var(--shadow); }
+  }
+  @media (max-width: 640px) {
+    .rail { width: 52px; }
+    .rail-item span { display: none; }
+    .drawer { left: 52px; }
+    .zone-legend { display: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="mark" aria-hidden="true">
+    <svg viewBox="0 0 32 32" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 24h7l3-9 4-5" stroke="#f5b800"/>
+      <path d="M27 24h-7l-3-7-2-4" stroke="#58a6ff"/>
+      <rect x="12.5" y="19.5" width="7" height="4.5" rx="1" fill="#94a3b8" stroke="none"/>
+      <circle cx="16" cy="9" r="2" fill="#f59e0b" stroke="none"/>
+    </svg>
+  </div>
+  <div class="title">
+    <small>Gear-motor housing assembly · line tracking · collaborative cell</small>
+    <h1>Assembly cell: <span class="f">FANUC LR Mate</span> + <span class="u">UR5e</span></h1>
+  </div>
+  <div class="mode-switch" role="group" aria-label="Mode">
+    <button type="button" data-mode="program" aria-pressed="true">Program</button>
+    <button type="button" data-mode="manual" aria-pressed="false">Manual</button>
+  </div>
+  <button class="icon-btn" id="theme" type="button" aria-label="Switch light or dark theme">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+  </button>
+</header>
+
+<div class="app">
+  <nav class="rail" aria-label="Panels">
+    <button class="rail-item" type="button" data-panel="live-card" data-modes="program manual" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 16a8 8 0 1 1 16 0"/><path d="M12 16l4-5"/></svg><span>Live</span></button>
+    <button class="rail-item" type="button" data-panel="program-card" data-modes="program"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg><span>Program</span></button>
+    <button class="rail-item" type="button" data-panel="gantt-card" data-modes="program"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5h7v3H4zM9 10h9v3H9zM6 15h5v3H6zM12 20h8"/></svg><span>Timing</span></button>
+    <button class="rail-item" type="button" data-panel="joints-card" data-modes="program manual"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="7" cy="17" r="2"/></svg><span>Joints</span></button>
+    <button class="rail-item" type="button" data-panel="report-card" data-modes="program"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg><span>Report</span></button>
+    <button class="rail-item" type="button" data-panel="whatif-card" data-modes="program"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 18h16"/><path d="M4 8h2M10 8h2M16 8h2"/><circle cx="7" cy="8" r="2.2"/><circle cx="14" cy="8" r="2.2"/></svg><span>What-if</span></button>
+  </nav>
+
+  <aside class="drawer" id="drawer" aria-label="Open panels">
+    <div class="card" id="live-card">
+      <h2>Live state <span id="live-sub">Hold</span><button class="close" type="button" aria-label="Close panel">×</button></h2>
+      <div class="stats">
+        <div class="stat"><small>Min. clearance</small><div class="value"><span id="s-clear">–</span><em>mm</em></div><div class="sub" id="s-clear-pair">FANUC ↔ UR5e</div></div>
+        <div class="stat" id="s-scanner-stat"><small>Safety scanner</small><div class="value" id="s-scanner">Clear</div><div class="sub" id="s-scanner-sub">warn 1.20 m · protect 0.60 m</div></div>
+        <div class="stat"><small>Infeed belt</small><div class="value"><span id="s-belt">0.10</span><em>m/s</em></div><div class="sub">pick window −0.45…−0.05 m</div></div>
+        <div class="stat"><small>Cover trays</small><div class="value" id="s-trays">6 · 6</div><div class="sub" id="s-trays-sub">remaining, tray 1 · tray 2</div></div>
+        <div class="stat" id="s-yield-stat"><small>Good / reject</small><div class="value" id="s-yield">0 / 0</div><div class="sub" id="s-yield-sub">of 12 housings</div></div>
+        <div class="stat" id="s-ur-stat"><small>UR TCP cap</small><div class="value" id="s-ur-speed">1.00 m/s</div><div class="sub" id="s-ur-speed-sub">nominal collaborative speed</div></div>
+        <div class="stat"><small>Dual gripper</small><div class="value" id="s-grip">A</div><div class="sub" id="s-grip-sub">180° rotator</div></div>
+        <div class="stat"><small>Cycle</small><div class="value"><span id="s-cycle">0.0</span><em>s</em></div><div class="sub" id="s-util">FANUC · UR5e · camera</div></div>
+      </div>
+      <p class="small-note" id="live-note">12 housings per cycle. Dual gripper on a 180° rotator.</p>
+    </div>
+
+    <div class="card" id="program-card" hidden>
+      <h2>Program <span id="program-total"></span><button class="close" type="button" aria-label="Close panel">×</button></h2>
+      <ol class="program" id="program"></ol>
+    </div>
+
+    <div class="card" id="gantt-card" hidden>
+      <h2>Timing <span>fixture mutex &amp; cycle, s</span><button class="close" type="button" aria-label="Close panel">×</button></h2>
+      <div id="gantt"></div>
+    </div>
+
+    <div class="card" id="joints-card" hidden>
+      <h2>Joints <span>position within limits</span><button class="close" type="button" aria-label="Close panel">×</button></h2>
+      <div class="joints" id="joints"></div>
+    </div>
+
+    <div class="card" id="report-card" hidden>
+      <h2>Report <span>cell frame, mm</span><button class="close" type="button" aria-label="Close panel">×</button></h2>
+      <div class="tcp" id="tcp"></div>
+      <dl class="kv" id="report"></dl>
+    </div>
+
+    <div class="card" id="whatif-card" hidden>
+      <h2>What-if <span>infeed speed, m/s</span><button class="close" type="button" aria-label="Close panel">×</button></h2>
+      <label class="belt-row" for="belt-speed">Speed
+        <input type="range" id="belt-speed" min="0.05" max="0.20" step="0.01" value="0.10" aria-label="Infeed belt speed">
+        <input type="number" id="belt-speed-n" min="0.05" max="0.20" step="0.01" value="0.10" aria-label="Infeed belt speed, m/s">
+      </label>
+      <dl class="kv" id="whatif-kv"></dl>
+      <p class="small-note" id="whatif-note">Release the slider to apply a new belt speed.</p>
+      <div id="whatif-chart"></div>
+    </div>
+  </aside>
+
+  <section class="stage" aria-label="Simulation">
+    <div class="viewport" id="viewport">
+      <div class="overlay now glass" aria-live="polite">
+        <div class="now-row"><span class="chip conv">INFEED</span><div class="what"><b id="now-conv">0.10 m/s</b><code id="cmd-conv">x = −1.80…+0.10 m · pick [−0.45, −0.05]</code></div></div>
+        <div class="now-row"><span class="chip fanuc">FANUC</span><div class="what"><b id="now-fanuc">Hold</b><code id="cmd-fanuc">LR Mate 200iD/7L · dual gripper</code></div></div>
+        <div class="now-row"><span class="chip ur">UR5e</span><div class="what"><b id="now-ur">Hold</b><code id="cmd-ur">Collaborative side · 2 × 3 cover trays</code></div></div>
+        <div class="now-row"><span class="chip op">OPER</span><div class="what"><b id="now-op">Aisle</b><code id="cmd-op">Scanner warn 1.20 m · protect 0.60 m</code></div></div>
+      </div>
+
+      <div class="overlay toolbar">
+        <div class="views glass" role="group" aria-label="Camera views">
+          <button type="button" data-view="iso" aria-pressed="true">Iso</button>
+          <button type="button" data-view="front">Front</button>
+          <button type="button" data-view="side">Side</button>
+          <button type="button" data-view="top">Top</button>
+          <button type="button" data-view="fanuc">FANUC</button>
+          <button type="button" data-view="ur">UR5e</button>
+          <button type="button" data-view="operator">Operator</button>
+        </div>
+      </div>
+
+      <div class="overlay zone-legend glass">
+        <span><i id="zone-dot-fixture" style="background:var(--faint)"></i>Fixture: <b id="zone-owner-fixture">free</b></span>
+        <span><i id="zone-dot-scanner" style="background:var(--good)"></i>Scanner: <b id="zone-owner-scanner">clear</b></span>
+      </div>
+
+      <div class="overlay hint">Drag to rotate · right-drag to pan · scroll to zoom · Space to play</div>
+      <div class="load-error" id="load-error">Could not initialize the local WebGL scene.<br>Check browser WebGL support and reload the page.</div>
+    </div>
+
+    <div class="transport">
+      <button class="play" id="play" type="button" aria-label="Play"><svg id="play-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg></button>
+      <button class="icon-btn" id="restart" type="button" aria-label="Restart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></svg></button>
+      <div class="timeline" id="timeline" role="slider" tabindex="0" aria-label="Cycle time" aria-valuemin="0">
+        <canvas id="lanes"></canvas>
+        <div class="playhead" id="playhead"></div>
+      </div>
+      <div class="clock mono"><b id="clock-now">0.0</b> / <span id="clock-total">0.0</span> s</div>
+      <div class="chips" role="group" aria-label="Speed">
+        <button type="button" data-speed="0.25">¼×</button>
+        <button type="button" data-speed="0.5">½×</button>
+        <button type="button" data-speed="1" aria-pressed="true">1×</button>
+        <button type="button" data-speed="2">2×</button>
+      </div>
+      <label class="toggle"><input type="checkbox" id="loop" checked> Loop</label>
+      <label class="toggle"><input type="checkbox" id="trail" checked> Path</label>
+      <label class="toggle"><input type="checkbox" id="guards" checked> Guards</label>
+      <label class="toggle"><input type="checkbox" id="hq"> HQ</label>
+    </div>
+  </section>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "./vendor/three/build/three.module.js",
+  "three/addons/": "./vendor/three/examples/jsm/"
+} }
+</script>
+<script>
+  (function () {
+    const root = document.documentElement;
+    if (new URLSearchParams(location.search).has("shot")) root.classList.add("shot-mode");
+    let saved = null;
+    try { saved = localStorage.getItem("fanuc-ur-theme"); } catch (e) {}
+    if (saved) root.dataset.theme = saved;
+    document.getElementById("theme").addEventListener("click", () => {
+      const isDark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+      root.dataset.theme = isDark ? "light" : "dark";
+      try { localStorage.setItem("fanuc-ur-theme", root.dataset.theme); } catch (e) {}
+      window.dispatchEvent(new Event("themechange"));
+    });
+    setTimeout(() => {
+      if (!window.__cell || !window.__cell.ready) {
+        const el = document.getElementById("load-error");
+        if (el) el.style.display = "grid";
+      }
+    }, 10000);
+  })();
+</script>
+<!-- @@MODULE -->
+</body>
+</html>

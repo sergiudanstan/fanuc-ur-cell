@@ -1,0 +1,4170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>FANUC LR Mate + UR5e Assembly Cell</title>
+<meta name="description" content="Digital twin of a hybrid industrial and collaborative gear-motor assembly cell: FANUC LR Mate 200iD/7L, UR5e cobot, conveyor line tracking, safety scanner, and fixture interlocks.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --panel: #ffffff;
+    --panel-2: #eceef2;
+    --ink: #171a1f;
+    --muted: #525965;
+    --faint: #848c99;
+    --line: #d8dce3;
+    --accent: #d97706;
+    --accent-soft: #fef3c7;
+    --fanuc: #d99b00;
+    --fanuc-soft: #fef5d6;
+    --ur: #1d6fb8;
+    --ur-soft: #e0effc;
+    --conv: #4d5b66;
+    --conv-soft: #e7ebee;
+    --op: #2b8a57;
+    --op-soft: #dff5e8;
+    --bad: #c8312b;
+    --bad-soft: #fbe5e3;
+    --good: #22863a;
+    --scene-top: #f7f8fa;
+    --scene-bottom: #dfe3e8;
+    --shadow: 0 1px 2px rgba(23, 26, 31, 0.08), 0 3px 10px rgba(23, 26, 31, 0.06);
+    --display: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --ui: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111317;
+      --panel: #191c22;
+      --panel-2: #22262e;
+      --ink: #e8ecf2;
+      --muted: #a2aab8;
+      --faint: #707988;
+      --line: #303642;
+      --accent: #f59e0b;
+      --accent-soft: #382912;
+      --fanuc: #f5b800;
+      --fanuc-soft: #382c0e;
+      --ur: #58a6ff;
+      --ur-soft: #1a2d44;
+      --conv: #94a3b8;
+      --conv-soft: #252c35;
+      --op: #4ade80;
+      --op-soft: #143322;
+      --bad: #ff7b72;
+      --bad-soft: #43201e;
+      --good: #56d364;
+      --scene-top: #21252d;
+      --scene-bottom: #0f1115;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 3px 10px rgba(0, 0, 0, 0.35);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #111317;
+    --panel: #191c22;
+    --panel-2: #22262e;
+    --ink: #e8ecf2;
+    --muted: #a2aab8;
+    --faint: #707988;
+    --line: #303642;
+    --accent: #f59e0b;
+    --accent-soft: #382912;
+    --fanuc: #f5b800;
+    --fanuc-soft: #382c0e;
+    --ur: #58a6ff;
+    --ur-soft: #1a2d44;
+    --conv: #94a3b8;
+    --conv-soft: #252c35;
+    --op: #4ade80;
+    --op-soft: #143322;
+    --bad: #ff7b72;
+    --bad-soft: #43201e;
+    --good: #56d364;
+    --scene-top: #21252d;
+    --scene-bottom: #0f1115;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 3px 10px rgba(0, 0, 0, 0.35);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--ink);
+    font: 400 14px/1.45 var(--ui);
+    -webkit-font-smoothing: antialiased;
+  }
+  button, select, input { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  header {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+  }
+  .mark {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 9px;
+    background: #1c222b;
+    display: grid;
+    place-items: center;
+  }
+  .mark svg { width: 28px; height: 28px; }
+  .title { min-width: 0; line-height: 1.15; }
+  .title small {
+    display: block;
+    font: 600 11px var(--ui);
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .title h1 {
+    margin: 0;
+    font: 700 20px var(--display);
+    letter-spacing: -0.01em;
+  }
+  .title h1 .f { color: var(--fanuc); }
+  .title h1 .u { color: var(--ur); }
+
+  .mode-switch {
+    margin-left: auto;
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--panel-2);
+  }
+  .mode-switch button {
+    border: 0;
+    background: none;
+    cursor: pointer;
+    padding: 5px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .mode-switch button[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--bg);
+  }
+  .icon-btn {
+    flex: none;
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--panel);
+    cursor: pointer;
+  }
+  .icon-btn:hover { border-color: var(--faint); }
+  .icon-btn svg { width: 18px; height: 18px; }
+
+  .app { position: relative; flex: 1; min-height: 0; display: flex; }
+  .rail {
+    flex: none;
+    width: 68px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 6px;
+    border-right: 1px solid var(--line);
+    background: var(--panel);
+    overflow-y: auto;
+  }
+  .rail-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 2px;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 10.5px;
+    font-weight: 500;
+  }
+  .rail-item svg { width: 20px; height: 20px; }
+  .rail-item:hover { background: var(--panel-2); color: var(--ink); }
+  .rail-item[aria-pressed="true"] {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .drawer {
+    flex: none;
+    width: 330px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    overflow-y: auto;
+    border-right: 1px solid var(--line);
+    background: var(--panel-2);
+  }
+  .drawer[hidden] { display: none; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: var(--shadow);
+  }
+  .card h2 {
+    margin: 0 0 10px;
+    font: 600 12px var(--display);
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .card h2 span {
+    font: 400 11px var(--mono);
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--faint);
+  }
+  .card h2 .close {
+    margin-left: auto;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    color: var(--faint);
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 2px;
+  }
+
+  .stage { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--panel); }
+  .viewport { position: relative; flex: 1; min-height: 0; }
+  .viewport canvas.main { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .overlay { position: absolute; }
+  .glass {
+    background: color-mix(in srgb, var(--panel) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--line);
+    border-radius: 11px;
+  }
+  .now {
+    top: 12px;
+    left: 12px;
+    width: min(390px, calc(100% - 24px));
+    padding: 10px 12px;
+    display: grid;
+    gap: 5px;
+  }
+  .now-row {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: 8px;
+    align-items: baseline;
+  }
+  .now-row .what { min-width: 0; }
+  .now-row b { font-weight: 600; }
+  .now-row code {
+    display: block;
+    font: 400 11px var(--mono);
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .chip {
+    justify-self: start;
+    font: 600 10px var(--mono);
+    letter-spacing: 0.05em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .chip.conv { background: var(--conv-soft); color: var(--conv); }
+  .chip.fanuc { background: var(--fanuc-soft); color: var(--fanuc); }
+  .chip.ur { background: var(--ur-soft); color: var(--ur); }
+  .chip.op { background: var(--op-soft); color: var(--op); }
+
+  .toolbar {
+    top: 12px;
+    right: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+  .views {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 2px;
+    padding: 4px;
+    max-width: 390px;
+  }
+  .views button {
+    border: 0;
+    background: none;
+    cursor: pointer;
+    padding: 5px 9px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+  }
+  .views button:hover { color: var(--ink); }
+  .views button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  .hint { right: 12px; bottom: 10px; font-size: 11px; color: var(--faint); }
+  .zone-legend {
+    left: 12px;
+    bottom: 10px;
+    padding: 6px 10px;
+    font-size: 12px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .zone-legend span { display: inline-flex; gap: 6px; align-items: center; }
+  .zone-legend i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    background: var(--faint);
+  }
+  .load-error {
+    position: absolute;
+    inset: 0;
+    display: none;
+    place-items: center;
+    text-align: center;
+    padding: 24px;
+    color: var(--muted);
+  }
+
+  .transport {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 14px;
+    border-top: 1px solid var(--line);
+    background: var(--panel-2);
+  }
+  .play {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    border: 0;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+  }
+  .play svg { width: 18px; height: 18px; }
+  .timeline {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    height: 50px;
+    cursor: pointer;
+    touch-action: none;
+  }
+  .timeline canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .playhead {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    margin-left: -1px;
+    background: var(--accent);
+    pointer-events: none;
+  }
+  .clock { flex: none; font-size: 13px; color: var(--muted); min-width: 96px; text-align: right; }
+  .clock b { color: var(--ink); font-weight: 500; }
+  .chips {
+    flex: none;
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--panel);
+  }
+  .chips button {
+    border: 0;
+    background: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .chips button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  .toggle {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+  }
+  .toggle input { accent-color: var(--accent); margin: 0; }
+
+  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .stat { background: var(--panel-2); border-radius: 10px; padding: 9px 10px; min-width: 0; }
+  .stat small { display: block; font-size: 11px; color: var(--muted); }
+  .stat .value { font: 500 18px var(--mono); margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .stat .value em { font-style: normal; font-size: 11px; color: var(--faint); margin-left: 2px; }
+  .stat .sub { font-size: 11px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kv { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; margin: 0; font-size: 13px; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .belt-row { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; }
+  .belt-row input[type="range"] { flex: 1; accent-color: var(--accent); min-width: 0; }
+  .belt-row input[type="number"] {
+    width: 72px;
+    padding: 3px 6px;
+    text-align: right;
+    font: 500 12px var(--mono);
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    color: var(--ink);
+  }
+  .program { list-style: none; margin: 0; padding: 0; max-height: 360px; overflow-y: auto; }
+  .program li {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 2px 8px;
+    align-items: baseline;
+    padding: 6px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .program li:hover { background: var(--panel-2); }
+  .program li.active { background: var(--panel-2); box-shadow: inset 2px 0 0 var(--accent); }
+  .program li.done .label { color: var(--faint); }
+  .program li .fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 0;
+    background: var(--accent-soft);
+    pointer-events: none;
+  }
+  .program li .label { font-weight: 600; }
+  .program li .dur { font: 11px var(--mono); color: var(--faint); }
+  .program li code { grid-column: 1 / -1; font: 11px var(--mono); color: var(--muted); }
+  .joints { display: grid; gap: 7px; }
+  .joints h3 { margin: 8px 0 0; font: 600 12px var(--ui); letter-spacing: 0; text-transform: none; color: var(--muted); }
+  .joint { display: grid; grid-template-columns: 34px 1fr 72px; gap: 8px; align-items: center; font-size: 12px; }
+  .joint .track { position: relative; height: 8px; border-radius: 99px; background: var(--panel-2); }
+  .joint .track i {
+    position: absolute;
+    top: -3px;
+    width: 4px;
+    height: 14px;
+    margin-left: -2px;
+    border-radius: 2px;
+    background: var(--ink);
+  }
+  .joint .track.near i { background: var(--bad); }
+  .joint .v { font: 500 12px var(--mono); text-align: right; color: var(--muted); }
+  .tcp { display: grid; grid-template-columns: auto repeat(3, 1fr); gap: 4px 8px; align-items: end; margin-bottom: 12px; }
+  .tcp small { display: block; color: var(--faint); font-size: 10px; }
+  .tcp b { font: 500 14px var(--mono); }
+  #gantt svg, #whatif-chart svg { width: 100%; height: auto; display: block; }
+  #gantt text, #whatif-chart text { font-family: var(--ui); }
+  .gantt-legend { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .gantt-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .kv .ok, .stat.ok .value { color: var(--good); }
+  .kv .warn, .stat.warn .value { color: var(--accent); }
+  .kv .bad, .stat.bad .value { color: var(--bad); }
+  .chip.camera { background: var(--conv-soft); color: var(--conv); }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .btn {
+    padding: 7px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--panel-2);
+  }
+  .small-note { margin: 8px 0 0; font-size: 11.5px; color: var(--faint); }
+
+  html.shot-mode header,
+  html.shot-mode .rail,
+  html.shot-mode .drawer,
+  html.shot-mode .transport,
+  html.shot-mode .overlay { display: none !important; }
+
+  @media (max-width: 900px) {
+    .hint { display: none; }
+    .drawer { position: absolute; z-index: 15; top: 0; bottom: 0; left: 68px; width: min(330px, calc(100vw - 80px)); box-shadow: var(--shadow); }
+  }
+  @media (max-width: 640px) {
+    .rail { width: 52px; }
+    .rail-item span { display: none; }
+    .drawer { left: 52px; }
+    .zone-legend { display: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="mark" aria-hidden="true">
+    <svg viewBox="0 0 32 32" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 24h7l3-9 4-5" stroke="#f5b800"/>
+      <path d="M27 24h-7l-3-7-2-4" stroke="#58a6ff"/>
+      <rect x="12.5" y="19.5" width="7" height="4.5" rx="1" fill="#94a3b8" stroke="none"/>
+      <circle cx="16" cy="9" r="2" fill="#f59e0b" stroke="none"/>
+    </svg>
+  </div>
+  <div class="title">
+    <small>Gear-motor housing assembly · line tracking · collaborative cell</small>
+    <h1>Assembly cell: <span class="f">FANUC LR Mate</span> + <span class="u">UR5e</span></h1>
+  </div>
+  <div class="mode-switch" role="group" aria-label="Mode">
+    <button type="button" data-mode="program" aria-pressed="true">Program</button>
+    <button type="button" data-mode="manual" aria-pressed="false">Manual</button>
+  </div>
+  <button class="icon-btn" id="theme" type="button" aria-label="Switch light or dark theme">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+  </button>
+</header>
+
+<div class="app">
+  <nav class="rail" aria-label="Panels">
+    <button class="rail-item" type="button" data-panel="live-card" data-modes="program manual" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 16a8 8 0 1 1 16 0"/><path d="M12 16l4-5"/></svg><span>Live</span></button>
+    <button class="rail-item" type="button" data-panel="program-card" data-modes="program"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg><span>Program</span></button>
+    <button class="rail-item" type="button" data-panel="gantt-card" data-modes="program"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5h7v3H4zM9 10h9v3H9zM6 15h5v3H6zM12 20h8"/></svg><span>Timing</span></button>
+    <button class="rail-item" type="button" data-panel="joints-card" data-modes="program manual"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="7" cy="17" r="2"/></svg><span>Joints</span></button>
+    <button class="rail-item" type="button" data-panel="report-card" data-modes="program"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg><span>Report</span></button>
+    <button class="rail-item" type="button" data-panel="whatif-card" data-modes="program"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 18h16"/><path d="M4 8h2M10 8h2M16 8h2"/><circle cx="7" cy="8" r="2.2"/><circle cx="14" cy="8" r="2.2"/></svg><span>What-if</span></button>
+  </nav>
+
+  <aside class="drawer" id="drawer" aria-label="Open panels">
+    <div class="card" id="live-card">
+      <h2>Live state <span id="live-sub">Hold</span><button class="close" type="button" aria-label="Close panel">×</button></h2>
+      <div class="stats">
+        <div class="stat"><small>Min. clearance</small><div class="value"><span id="s-clear">–</span><em>mm</em></div><div class="sub" id="s-clear-pair">FANUC ↔ UR5e</div></div>
+        <div class="stat" id="s-scanner-stat"><small>Safety scanner</small><div class="value" id="s-scanner">Clear</div><div class="sub" id="s-scanner-sub">warn 1.20 m · protect 0.60 m</div></div>
+        <div class="stat"><small>Infeed belt</small><div class="value"><span id="s-belt">0.10</span><em>m/s</em></div><div class="sub">pick window −0.45…−0.05 m</div></div>
+        <div class="stat"><small>Cover trays</small><div class="value" id="s-trays">6 · 6</div><div class="sub" id="s-trays-sub">remaining, tray 1 · tray 2</div></div>
+        <div class="stat" id="s-yield-stat"><small>Good / reject</small><div class="value" id="s-yield">0 / 0</div><div class="sub" id="s-yield-sub">of 12 housings</div></div>
+        <div class="stat" id="s-ur-stat"><small>UR TCP cap</small><div class="value" id="s-ur-speed">1.00 m/s</div><div class="sub" id="s-ur-speed-sub">nominal collaborative speed</div></div>
+        <div class="stat"><small>Dual gripper</small><div class="value" id="s-grip">A</div><div class="sub" id="s-grip-sub">180° rotator</div></div>
+        <div class="stat"><small>Cycle</small><div class="value"><span id="s-cycle">0.0</span><em>s</em></div><div class="sub" id="s-util">FANUC · UR5e · camera</div></div>
+      </div>
+      <p class="small-note" id="live-note">12 housings per cycle. Dual gripper on a 180° rotator.</p>
+    </div>
+
+    <div class="card" id="program-card" hidden>
+      <h2>Program <span id="program-total"></span><button class="close" type="button" aria-label="Close panel">×</button></h2>
+      <ol class="program" id="program"></ol>
+    </div>
+
+    <div class="card" id="gantt-card" hidden>
+      <h2>Timing <span>fixture mutex &amp; cycle, s</span><button class="close" type="button" aria-label="Close panel">×</button></h2>
+      <div id="gantt"></div>
+    </div>
+
+    <div class="card" id="joints-card" hidden>
+      <h2>Joints <span>position within limits</span><button class="close" type="button" aria-label="Close panel">×</button></h2>
+      <div class="joints" id="joints"></div>
+    </div>
+
+    <div class="card" id="report-card" hidden>
+      <h2>Report <span>cell frame, mm</span><button class="close" type="button" aria-label="Close panel">×</button></h2>
+      <div class="tcp" id="tcp"></div>
+      <dl class="kv" id="report"></dl>
+    </div>
+
+    <div class="card" id="whatif-card" hidden>
+      <h2>What-if <span>infeed speed, m/s</span><button class="close" type="button" aria-label="Close panel">×</button></h2>
+      <label class="belt-row" for="belt-speed">Speed
+        <input type="range" id="belt-speed" min="0.05" max="0.20" step="0.01" value="0.10" aria-label="Infeed belt speed">
+        <input type="number" id="belt-speed-n" min="0.05" max="0.20" step="0.01" value="0.10" aria-label="Infeed belt speed, m/s">
+      </label>
+      <dl class="kv" id="whatif-kv"></dl>
+      <p class="small-note" id="whatif-note">Release the slider to apply a new belt speed.</p>
+      <div id="whatif-chart"></div>
+    </div>
+  </aside>
+
+  <section class="stage" aria-label="Simulation">
+    <div class="viewport" id="viewport">
+      <div class="overlay now glass" aria-live="polite">
+        <div class="now-row"><span class="chip conv">INFEED</span><div class="what"><b id="now-conv">0.10 m/s</b><code id="cmd-conv">x = −1.80…+0.10 m · pick [−0.45, −0.05]</code></div></div>
+        <div class="now-row"><span class="chip fanuc">FANUC</span><div class="what"><b id="now-fanuc">Hold</b><code id="cmd-fanuc">LR Mate 200iD/7L · dual gripper</code></div></div>
+        <div class="now-row"><span class="chip ur">UR5e</span><div class="what"><b id="now-ur">Hold</b><code id="cmd-ur">Collaborative side · 2 × 3 cover trays</code></div></div>
+        <div class="now-row"><span class="chip op">OPER</span><div class="what"><b id="now-op">Aisle</b><code id="cmd-op">Scanner warn 1.20 m · protect 0.60 m</code></div></div>
+      </div>
+
+      <div class="overlay toolbar">
+        <div class="views glass" role="group" aria-label="Camera views">
+          <button type="button" data-view="iso" aria-pressed="true">Iso</button>
+          <button type="button" data-view="front">Front</button>
+          <button type="button" data-view="side">Side</button>
+          <button type="button" data-view="top">Top</button>
+          <button type="button" data-view="fanuc">FANUC</button>
+          <button type="button" data-view="ur">UR5e</button>
+          <button type="button" data-view="operator">Operator</button>
+        </div>
+      </div>
+
+      <div class="overlay zone-legend glass">
+        <span><i id="zone-dot-fixture" style="background:var(--faint)"></i>Fixture: <b id="zone-owner-fixture">free</b></span>
+        <span><i id="zone-dot-scanner" style="background:var(--good)"></i>Scanner: <b id="zone-owner-scanner">clear</b></span>
+      </div>
+
+      <div class="overlay hint">Drag to rotate · right-drag to pan · scroll to zoom · Space to play</div>
+      <div class="load-error" id="load-error">Could not initialize the local WebGL scene.<br>Check browser WebGL support and reload the page.</div>
+    </div>
+
+    <div class="transport">
+      <button class="play" id="play" type="button" aria-label="Play"><svg id="play-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg></button>
+      <button class="icon-btn" id="restart" type="button" aria-label="Restart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></svg></button>
+      <div class="timeline" id="timeline" role="slider" tabindex="0" aria-label="Cycle time" aria-valuemin="0">
+        <canvas id="lanes"></canvas>
+        <div class="playhead" id="playhead"></div>
+      </div>
+      <div class="clock mono"><b id="clock-now">0.0</b> / <span id="clock-total">0.0</span> s</div>
+      <div class="chips" role="group" aria-label="Speed">
+        <button type="button" data-speed="0.25">¼×</button>
+        <button type="button" data-speed="0.5">½×</button>
+        <button type="button" data-speed="1" aria-pressed="true">1×</button>
+        <button type="button" data-speed="2">2×</button>
+      </div>
+      <label class="toggle"><input type="checkbox" id="loop" checked> Loop</label>
+      <label class="toggle"><input type="checkbox" id="trail" checked> Path</label>
+      <label class="toggle"><input type="checkbox" id="guards" checked> Guards</label>
+      <label class="toggle"><input type="checkbox" id="hq"> HQ</label>
+    </div>
+  </section>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "./vendor/three/build/three.module.js",
+  "three/addons/": "./vendor/three/examples/jsm/"
+} }
+</script>
+<script>
+  (function () {
+    const root = document.documentElement;
+    if (new URLSearchParams(location.search).has("shot")) root.classList.add("shot-mode");
+    let saved = null;
+    try { saved = localStorage.getItem("fanuc-ur-theme"); } catch (e) {}
+    if (saved) root.dataset.theme = saved;
+    document.getElementById("theme").addEventListener("click", () => {
+      const isDark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+      root.dataset.theme = isDark ? "light" : "dark";
+      try { localStorage.setItem("fanuc-ur-theme", root.dataset.theme); } catch (e) {}
+      window.dispatchEvent(new Event("themechange"));
+    });
+    setTimeout(() => {
+      if (!window.__cell || !window.__cell.ready) {
+        const el = document.getElementById("load-error");
+        if (el) el.style.display = "grid";
+      }
+    }, 10000);
+  })();
+</script>
+<script type="module">
+// @@logic-start
+const CELL = {
+  infeed:  { x0: -1.80, x1: 0.10, z: -0.60, top: 0.80, width: 0.30, speed: 0.10 },
+  pickWin: { x0: -0.45, x1: -0.05 },            // FANUC pick window on the infeed belt
+  outfeed: { x0: 0.30, x1: 1.60, z: -0.40, top: 0.80, width: 0.30, speed: 0.20 },
+  fanuc:   { base: [0.00, 0.60, -0.05], yaw: 0 },        // pedestal top = robot mounting plane
+  ur:      { base: [0.00, 0.80, 0.85], yaw: Math.PI },   // table top = robot mounting plane
+  fixture: { pos: [0.00, 0.80, 0.25] },                  // table top centre under the housing
+  rejectBin: { pos: [-0.45, 0.65, 0.20], size: [0.30, 0.25, 0.30] }, // pos = top-centre of opening
+  trays:   [ { pos: [0.55, 0.80, 0.95] }, { pos: [0.55, 0.80, 1.20] } ], // 2 × 3 grid, pitch 0.10
+  camera:  [0.00, 1.45, 0.25],
+  scanner: { center: [0.00, 0.85], warn: 1.20, protect: 0.60 }, // xz centre, radii
+  operator:{ aisle: [0.55, 2.40], station: [0.55, 1.70] },      // xz positions
+  fence:   { x0: -1.00, x1: 1.00, z0: -0.95, z1: 0.30, h: 2.00 }, // window at the fixture
+  housing: [0.12, 0.06, 0.08],                                   // x, y, z size
+};
+const N_PARTS = 12;
+const REJECTS = new Set([4, 9]);
+const INTERLOCK_LAG = 0;
+const ESC_X = -1.50;
+const lcRad = Math.PI / 180;
+const lcHalf = Math.PI / 2;
+const FANUC = {
+  name: "FANUC LR Mate 200iD/7L",
+  dh: { d1: 0.330, a1: 0.050, a2: 0.440, a3: 0.035, d4: 0.420, d6: 0.080 },
+  lim: [[-170, 170], [-90, 155], [-215, 215], [-190, 190], [-125, 125], [-360, 360]]
+    .map(pair => pair.map(x => x * lcRad)),
+  vmax: [370, 310, 410, 550, 545, 1000].map(x => x * lcRad),
+  tool: 0.100, vTcp: 1.50, aTcp: 6,
+};
+const UR = {
+  name: "UR5e",
+  dh: { d1: 0.1625, a2: -0.425, a3: -0.3922, d4: 0.1333, d5: 0.0997, d6: 0.0996 },
+  // UR SW10.13 UR5e technical specifications give the elbow range as ±160°.
+  // https://www.universal-robots.com/manuals/EN/HTML/SW10_13/Content/prod-usr-man/complianceUR5e/H_g5_sections/appendix_g5/tech_spec_sheet.htm
+  lim: [360, 360, 160, 360, 360, 360].map(x => [-x * lcRad, x * lcRad]),
+  vmax: Array(6).fill(Math.PI),
+  tool: 0.150, vTcp: 1.00, aTcp: 2.5,
+};
+
+const lcClamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
+const lcAdd = (a, b) => a.map((x, j) => x + b[j]);
+const lcSub = (a, b) => a.map((x, j) => x - b[j]);
+const lcScale = (a, s) => a.map(x => x * s);
+const lcDot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const lcCross = (a, b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+const lcCol = (R, j) => [R[0][j], R[1][j], R[2][j]];
+const lcTranspose = R => [lcCol(R, 0), lcCol(R, 1), lcCol(R, 2)];
+const lcApply = (R, p) => R.map(row => lcDot(row, p));
+const lcMul = (A, B) => {
+  const columns = lcTranspose(B);
+  return A.map(row => columns.map(col => lcDot(row, col)));
+};
+const lcMix = (a, b, s) => a.map((x, j) => x + s * (b[j] - x));
+function lcRx(q) {
+  const c = Math.cos(q), s = Math.sin(q);
+  return [[1,0,0],[0,c,-s],[0,s,c]];
+}
+function lcRy(q) {
+  const c = Math.cos(q), s = Math.sin(q);
+  return [[c,0,s],[0,1,0],[-s,0,c]];
+}
+function lcRz(q) {
+  const c = Math.cos(q), s = Math.sin(q);
+  return [[c,-s,0],[s,c,0],[0,0,1]];
+}
+// Base Z is up, base X is forward, base Y maps to world -Z before the
+// right-handed world-Y yaw about the mounting point. Tool advance is local +Z.
+const lcBaseRotation = actor => lcMul(lcRy(CELL[actor].yaw), [[1,0,0],[0,0,1],[0,-1,0]]);
+const lcFB = lcBaseRotation("fanuc"), lcUB = lcBaseRotation("ur");
+
+function lcForward(actor, q, links) {
+  const fanuc = actor === "fanuc";
+  const robot = fanuc ? FANUC : UR;
+  const { dh, tool } = robot;
+  let p = CELL[actor].base, R = fanuc ? lcFB : lcUB;
+  const points = links ? [p] : null;
+  const step = (offset, rotation) => {
+    p = lcAdd(p, lcApply(R, offset));
+    if (rotation) R = lcMul(R, rotation);
+    if (points) points.push(p);
+  };
+  if (fanuc) {
+    // At zero the upper arm points up, forearm and flange point forward.
+    // J1 rotates about base +Z, J2/J3 about successive +Y axes, then
+    // J4/J5/J6 about tool-frame +Z/+Y/+Z (positive right-hand rotations).
+    step([0,0,dh.d1], lcRz(q[0]));
+    step([dh.a1,0,0], lcRy(q[1]));
+    step([0,0,dh.a2], lcRy(q[2]));
+    step([dh.d4,0,dh.a3], lcMul(lcRy(lcHalf), lcMul(lcRz(q[3]), lcMul(lcRy(q[4]), lcRz(q[5])))));
+    step([0,0,dh.d6]);
+  } else {
+    // Standard DH zero: all theta = 0, long links point along base -X.
+    // Each joint rotates right-handed about the preceding frame's +Z.
+    const a = [0,dh.a2,dh.a3,0,0,0];
+    const d = [dh.d1,0,0,dh.d4,dh.d5,dh.d6];
+    const alpha = [lcHalf,0,0,lcHalf,-lcHalf,0];
+    for (let j = 0; j < 6; j++) {
+      step([a[j]*Math.cos(q[j]), a[j]*Math.sin(q[j]), d[j]], lcMul(lcRz(q[j]), lcRx(alpha[j])));
+    }
+  }
+  step([0,0,tool]);
+  return points ?? { p, R };
+}
+function fanucFK(q) { return lcForward("fanuc", q, false); }
+function urFK(q) { return lcForward("ur", q, false); }
+function fanucLinks(q) { return lcForward("fanuc", q, true); }
+function urLinks(q) { return lcForward("ur", q, true); }
+
+function lcNearest(branches, lim, ref) {
+  const turn = 2 * Math.PI;
+  let best = null, score = Infinity;
+  for (const branch of branches) {
+    const q = branch.map((x, j) => {
+      const [lo, hi] = lim[j];
+      const first = Math.ceil((lo - x - 1e-10) / turn);
+      const last = Math.floor((hi - x + 1e-10) / turn);
+      return first > last ? NaN : lcClamp(x + turn * lcClamp(Math.round((ref[j] - x) / turn), first, last), lo, hi);
+    });
+    const cost = q.reduce((sum, x, j) => sum + (x - ref[j]) ** 2, 0);
+    if (cost < score) { best = q; score = cost; }
+  }
+  return best;
+}
+function lcAcos(x) {
+  return Math.abs(x) <= 1 + 1e-10 ? Math.acos(lcClamp(x, -1, 1)) : NaN;
+}
+function fanucIK(p, R, qRef = Array(6).fill(0)) {
+  const { dh, lim, tool } = FANUC;
+  const inv = lcTranspose(lcFB);
+  R = lcMul(inv, R);
+  const w = lcSub(lcApply(inv, lcSub(p, CELL.fanuc.base)), lcScale(lcCol(R, 2), tool + dh.d6));
+  const azimuth = Math.hypot(w[0], w[1]) < 1e-12 ? qRef[0] : Math.atan2(w[1], w[0]);
+  const forearm = Math.hypot(dh.d4, dh.a3), bend = Math.atan2(dh.d4, dh.a3);
+  const branches = [];
+  for (const j1 of [azimuth, azimuth + Math.PI]) {
+    const x = w[0]*Math.cos(j1) + w[1]*Math.sin(j1) - dh.a1, z = w[2] - dh.d1;
+    const elbow = lcAcos((x*x + z*z - dh.a2**2 - forearm**2) / (2*dh.a2*forearm));
+    if (!Number.isFinite(elbow)) continue;
+    for (const e of [elbow, -elbow]) {
+      const j2 = Math.atan2(x, z) - Math.atan2(forearm*Math.sin(e), dh.a2 + forearm*Math.cos(e));
+      const j3 = e - bend;
+      const arm = lcMul(lcRz(j1), lcRy(j2 + j3 + lcHalf));
+      const W = lcMul(lcTranspose(arm), R);
+      const j5 = Math.atan2(Math.hypot(W[0][2], W[1][2]), W[2][2]);
+      if (Math.sin(j5) < 1e-10) {
+        const sign = W[2][2] >= 0 ? 1 : -1;
+        const phase = Math.atan2(sign * W[1][0], sign * W[0][0]);
+        for (let n = -3; n <= 3; n++) {
+          const sum = phase + 2*Math.PI*n;
+          const bounds = lim[5].map(x => sum - sign*x).sort((a,b) => a-b);
+          const lo = Math.max(lim[3][0], bounds[0]), hi = Math.min(lim[3][1], bounds[1]);
+          if (lo <= hi) {
+            const j4 = lcClamp((qRef[3] + sum - sign*qRef[5])/2, lo, hi);
+            branches.push([j1,j2,j3,j4,j5,sign*(sum-j4)]);
+          }
+        }
+      } else {
+        const j4 = Math.atan2(W[1][2], W[0][2]), j6 = Math.atan2(W[2][1], -W[2][0]);
+        branches.push([j1,j2,j3,j4,j5,j6], [j1,j2,j3,j4+Math.PI,-j5,j6+Math.PI]);
+      }
+    }
+  }
+  return lcNearest(branches, lim, qRef);
+}
+function urIK(p, R, qRef = Array(6).fill(0)) {
+  const { dh, lim, tool } = UR;
+  const inv = lcTranspose(lcUB);
+  R = lcMul(inv, R);
+  const w = lcSub(lcApply(inv, lcSub(p, CELL.ur.base)), lcScale(lcCol(R, 2), tool + dh.d6));
+  const azimuth = Math.atan2(w[1], w[0]), radius = Math.hypot(w[0], w[1]);
+  const shoulder = lcAcos(dh.d4 / radius);
+  if (!Number.isFinite(shoulder)) return null;
+  const branches = [];
+  for (const j1 of [azimuth + lcHalf - shoulder, azimuth + lcHalf + shoulder]) {
+    const radial = [Math.cos(j1), Math.sin(j1), 0], tangent = [-radial[1], radial[0], 0];
+    const x6 = -lcDot(tangent, lcCol(R, 0)), y6 = lcDot(tangent, lcCol(R, 1));
+    const sinWrist = Math.hypot(x6, y6);
+    const wrist = Math.atan2(sinWrist, -lcDot(tangent, lcCol(R, 2)));
+    const roll = Math.atan2(y6, x6);
+    // At wrist singularity q6 is free. Start with the reference and also
+    // consider rolls aimed towards and away from the shoulder in the arm plane.
+    let wrists = [[wrist,roll], [-wrist,roll+Math.PI]];
+    if (sinWrist < 1e-10) {
+      const delta = lcSub(w, [0,0,dh.d1]);
+      const aim = Math.atan2(lcDot(delta,lcCol(R,0)), lcDot(delta,lcCol(R,1)));
+      wrists = [qRef[5], aim, aim+Math.PI].map(j6 => [wrist,j6]);
+    }
+    for (const [j5,j6] of wrists) {
+      const R4 = lcMul(R, lcMul(lcRz(-j6), lcMul(lcRx(lcHalf), lcRz(-j5))));
+      const p4 = lcSub(w, lcScale(lcCol(R4, 2), dh.d5));
+      const x = lcDot(radial, p4), y = p4[2] - dh.d1;
+      const elbow = lcAcos((x*x + y*y - dh.a2**2 - dh.a3**2) / (2*dh.a2*dh.a3));
+      if (!Number.isFinite(elbow)) continue;
+      const x4 = lcCol(R4, 0), pitch = Math.atan2(x4[2], lcDot(radial, x4));
+      for (const j3 of [elbow, -elbow]) {
+        const j2 = Math.atan2(-y, -x) - Math.atan2(-dh.a3*Math.sin(j3), -dh.a2 - dh.a3*Math.cos(j3));
+        branches.push([j1,j2,j3,pitch-j2-j3,j5,j6]);
+      }
+    }
+  }
+  return lcNearest(branches, lim, qRef);
+}
+
+const lcDt = 0.02;
+const lcGrid = t => Math.ceil(t/lcDt - 1e-8) * lcDt;
+const lcDown = [[1,0,0],[0,0,-1],[0,1,0]];
+function lcMotion(from, to, vmax, accel) {
+  const length = Math.hypot(...lcSub(to, from));
+  if (length === 0) return { duration: 0, at: () => from };
+  const ramp = Math.min(vmax/accel, Math.sqrt(length/accel));
+  const span = ramp + length/(accel*ramp);
+  const duration = lcGrid(span);
+  return { duration, at(elapsed) {
+    const t = lcClamp(elapsed/duration, 0, 1) * span;
+    const displacement = t < ramp ? accel*t*t/2 :
+      t > span-ramp ? length-accel*(span-t)**2/2 : accel*ramp*(t-ramp/2);
+    return lcMix(from, to, displacement/length);
+  } };
+}
+
+function lcClearance(f, u) {
+  let best = Infinity;
+  for (let i = 1; i < f.length; i++) {
+    const a = lcSub(f[i], f[i-1]), aa = lcDot(a,a);
+    for (let j = 1; j < u.length; j++) {
+      const b = lcSub(u[j], u[j-1]), bb = lcDot(b,b), w = lcSub(f[i-1], u[j-1]);
+      const ab = lcDot(a,b), aw = lcDot(a,w), bw = lcDot(b,w);
+      const squared = (s,t) => (w[0]+s*a[0]-t*b[0])**2 +
+        (w[1]+s*a[1]-t*b[1])**2 + (w[2]+s*a[2]-t*b[2])**2;
+      const project = x => lcClamp(x, 0, 1);
+      let d = Math.min(squared(0,project(bw/bb)), squared(1,project((bw+ab)/bb)),
+        squared(project(-aw/aa),0), squared(project((ab-aw)/aa),1));
+      const n = lcCross(a,b), det = lcDot(n,n);
+      if (det > 1e-24) {
+        const s = lcDot(lcCross(b,w),n)/det, t = lcDot(lcCross(a,w),n)/det;
+        if (s >= 0 && s <= 1 && t >= 0 && t <= 1) d = Math.min(d,squared(s,t));
+      }
+      best = Math.min(best, Math.sqrt(d) - (i === f.length-1 ? 0.05 : 0.06)
+        - (j === u.length-1 ? 0.05 : 0.055));
+    }
+  }
+  return best;
+}
+
+function cycleFor(beltSpeed = CELL.infeed.speed) {
+  if (!Number.isFinite(beltSpeed) || beltSpeed <= 0 || beltSpeed > 0.20) {
+    throw new RangeError("Belt speed must be in (0, 0.20] m/s");
+  }
+  const parts = [], trays = { swaps: [] };
+  const segs = { fanuc: [], ur: [], camera: [], operator: [] };
+  const zones = { fixture: { fanuc: [], ur: [], camera: [] } };
+  const clock = { fanuc: 0, ur: 0, camera: 0, operator: 0 };
+  const paths = { fanuc: [], ur: [] };
+  const fHome = [0.34,1.09,-0.33], uHome = [0.48,1.12,1.08];
+  const pose = { fanuc: fHome, ur: uHome };
+  let fixtureFree = 0;
+  function append(actor, t1, kind, fields, at) {
+    const t0 = clock[actor];
+    if (t1 <= t0 + 1e-9) return;
+    segs[actor].push({ t0, t1, kind, ...fields });
+    if (paths[actor]) {
+      const fixed = pose[actor];
+      paths[actor].push(at ?? (() => fixed));
+    }
+    clock[actor] = t1;
+  }
+  const pause = (actor, t) => append(actor, t, actor === "operator" ? "away" : "wait");
+  function reserve(actor, tReady) {
+    const start = Math.max(tReady, fixtureFree - INTERLOCK_LAG);
+    pause(actor, start);
+    return start;
+  }
+  function vacate(actor, start) {
+    fixtureFree = clock[actor];
+    zones.fixture[actor].push([start, fixtureFree]);
+  }
+  const inWarning = p => Math.hypot(...lcSub(p, CELL.scanner.center)) <= CELL.scanner.warn;
+  function operatorPosition(t, segment) {
+    const { aisle, station } = CELL.operator;
+    if (segment?.kind === "swap") return station;
+    if (segment?.kind === "walk_in" || segment?.kind === "walk_out") {
+      const s = lcClamp((t-segment.t0)/(segment.t1-segment.t0), 0, 1);
+      return lcMix(aisle, station, segment.kind === "walk_in" ? s : 1-s);
+    }
+    return aisle;
+  }
+  function warningDuring(t0, t1) {
+    return segs.operator.some(s => {
+      const from = Math.max(t0-lcDt, s.t0), to = Math.min(t1+lcDt, s.t1);
+      // On either walk the distance to scanner centre changes monotonically.
+      return from <= to && (inWarning(operatorPosition(from, s)) || inWarning(operatorPosition(to, s)));
+    });
+  }
+  function move(actor, to, kind = "move", fields) {
+    const robot = actor === "fanuc" ? FANUC : UR;
+    const speed = actor === "fanuc" ? 0.72 : 0.55;
+    const start = clock[actor];
+    let motion = lcMotion(pose[actor], to, speed, robot.aTcp * 0.65);
+    if (actor === "ur" && warningDuring(start, start+motion.duration)) {
+      motion = lcMotion(pose[actor], to, 0.24, robot.aTcp * 0.65);
+    }
+    append(actor, lcGrid(start + motion.duration), kind, fields, motion.at);
+    pose[actor] = to;
+  }
+  function dwell(actor, duration, kind, fields) {
+    append(actor, lcGrid(clock[actor] + duration), kind, fields);
+  }
+
+  // Housing TCP at its centre, cover TCP at the centre of its top face, screw
+  // TCP at its head. Tray columns at x ±0.10 or 0, rows at z ±0.05, lid top
+  // at tray.y + 0.027. Mounted lid top is fixture.y + 0.070. Holes are ordered
+  // by rows at z ±0.024, each with x -0.032 then +0.032.
+  const fixture = CELL.fixture.pos;
+  const housing = lcAdd(fixture, [0,CELL.housing[1]/2,0]);
+  const lid = lcAdd(fixture, [0,0.070,0]);
+  const fEntry = [0.30,1.08,0.10], fAbove = [0,1.06,0.25];
+  const uEntry = [0.16,1.08,0.50], uAbove = [0,1.04,0.25];
+  // The active gripper g tracks fTcp and rests at swivel angle g * PI.
+  // A swivel interpolates the angle and activates the other gripper at its end.
+  // fHeld lists both slots. Pick/unload acquire at the segment end, and
+  // load/place release at the segment end. Only the active slot handles parts.
+  const swivel = () => dwell("fanuc", 0.40, "swivel");
+  function place(k) {
+    const part = parts[k];
+    const out = [0.51,CELL.outfeed.top + CELL.housing[1]/2,CELL.outfeed.z];
+    const bin = lcAdd(CELL.rejectBin.pos,[0,0.04,0]);
+    if (part.reject) {
+      move("fanuc", [-0.43,1.06,0.25]);
+      move("fanuc", bin, "place_bin", { k });
+      part.end = { t: lcGrid(clock.fanuc+0.30), p: lcAdd(bin,[0,-0.26,0]) };
+      move("fanuc", [-0.43,1.06,0.25]);
+      move("fanuc", fEntry);
+    } else {
+      move("fanuc", [out[0],1.07,out[2]]);
+      move("fanuc", out, "place_out", { k });
+      part.end = { t: clock.fanuc, p: out };
+    }
+    move("fanuc", fHome);
+  }
+  let previousCoverStart = 0;
+  for (let k = 0; k < N_PARTS; k++) {
+    const from = [-0.22,CELL.infeed.top + CELL.housing[1]/2,CELL.infeed.z];
+    const ramp = 0.20, grip = 0.30;
+    const lead = lcAdd(from, [-beltSpeed*ramp/2,0,0]);
+    const end = lcAdd(from, [beltSpeed*grip,0,0]);
+    const trail = lcAdd(end, [beltSpeed*ramp/2,0,0]);
+    const travel = (from[0]-ESC_X)/beltSpeed;
+    pause("fanuc", lcGrid(travel-ramp-2));
+    move("fanuc", [lead[0],1.07,lead[2]]);
+    move("fanuc", lead);
+    pause("fanuc", lcGrid(Math.max(travel, previousCoverStart) - ramp));
+    append("fanuc", lcGrid(clock.fanuc+ramp), "move", undefined,
+      t => lcAdd(lead,[beltSpeed*t*t/(2*ramp),0,0]));
+    const pick = clock.fanuc;
+    append("fanuc", lcGrid(pick+grip), "pick", { k }, t => lcAdd(from,[beltSpeed*t,0,0]));
+    append("fanuc", lcGrid(clock.fanuc+ramp), "move", undefined,
+      t => lcAdd(end,[beltSpeed*(t-t*t/(2*ramp)),0,0]));
+    pose.fanuc = trail;
+    const reject = REJECTS.has(k);
+    parts.push({ k, reject, dest: reject ? "bin" : "out", cover: true, screws: 4,
+      release: pick-travel, pick: { t: pick, tcp: from, part: from } });
+    move("fanuc", [trail[0],1.07,trail[2]]);
+    move("fanuc", fHome);
+    move("fanuc", fEntry);
+    if (k) swivel(); // Present the empty slot before entering the fixture.
+    const load = reserve("fanuc", clock.fanuc);
+    move("fanuc", fAbove);
+    if (k) {
+      move("fanuc", housing, "unload", { k: k-1 });
+      move("fanuc", fAbove);
+      swivel();
+    }
+    move("fanuc", housing, "load", { k });
+    move("fanuc", fAbove);
+    move("fanuc", fEntry);
+    vacate("fanuc", load);
+    if (k) {
+      swivel(); // Present the finished housing after leaving the fixture.
+      place(k-1);
+    } else {
+      move("fanuc", fHome);
+    }
+
+    const tray = Math.floor(k/6), slot = k%6;
+    const cover = lcAdd(CELL.trays[tray].pos, [(slot%3-1)*0.10,0.027,slot<3 ? -0.05 : 0.05]);
+    const aboveCover = lcAdd(cover,[0,0.13,0]);
+    const assembly = reserve("ur", clock.ur);
+    move("ur", aboveCover);
+    move("ur", cover, "move", { k, tray, slot });
+    move("ur", aboveCover, "move", { k, tray, slot });
+    if (slot === 5) {
+      pause("operator", clock.ur);
+      dwell("operator", 1.40, "walk_in");
+      const t0 = clock.operator;
+      dwell("operator", 8, "swap", { tray });
+      trays.swaps.push({ t0, t1: clock.operator, tray });
+      dwell("operator", 1.40, "walk_out");
+    }
+    move("ur", uEntry);
+    move("ur", uAbove);
+    previousCoverStart = clock.ur;
+    move("ur", lid, "cover", { k, tray, slot });
+    for (let i = 0; i < 4; i++) {
+      const hole = lcAdd(lid,[i%2 ? 0.032 : -0.032,0,i<2 ? -0.024 : 0.024]);
+      move("ur", lcAdd(pose.ur,[0,0.045,0]));
+      move("ur", lcAdd(hole,[0,0.045,0]));
+      move("ur", hole);
+      dwell("ur", 1, "screw", { k, i });
+    }
+    move("ur", uAbove);
+    move("ur", uEntry);
+    vacate("ur", assembly);
+    move("ur", uHome);
+
+    const inspect = reserve("camera", clock.camera);
+    dwell("camera", 0.80, "inspect", { k });
+    vacate("camera", inspect);
+  }
+  move("fanuc", fEntry);
+  const lastUnload = reserve("fanuc", clock.fanuc);
+  move("fanuc", fAbove);
+  move("fanuc", housing, "unload", { k: N_PARTS-1 });
+  move("fanuc", fAbove);
+  move("fanuc", fEntry);
+  vacate("fanuc", lastUnload);
+  place(N_PARTS-1);
+  const DURATION = Math.max(...Object.values(clock), ...parts.map(part => part.end.t));
+  for (const actor of Object.keys(segs)) pause(actor, DURATION);
+  const util = {};
+  for (const actor of ["fanuc","ur","camera"]) {
+    util[actor] = segs[actor].reduce((sum,s) => sum + (s.kind === "wait" ? 0 : s.t1-s.t0),0)/DURATION;
+  }
+
+  const S = { dt: lcDt, t: [], fq: [], uq: [], fTcp: [], uTcp: [], opIn: [], opPos: [], fGrip: [], fSwivel: [], fHeld: [] };
+  const minClear = { m: Infinity, at: 0 };
+  const indices = { fanuc: 0, ur: 0, operator: 0 };
+  const segmentAt = (actor, t) => {
+    const segments = segs[actor];
+    while (indices[actor]+1 < segments.length && t >= segments[indices[actor]].t1-1e-9) indices[actor]++;
+    return segments[indices[actor]];
+  };
+  let fq = [0,0,0,0,0,0], uq = [0,-1.6,1.7,0,-1.5,-2];
+  let activeGrip = 0, completed = 0;
+  const held = [null, null];
+  for (let j = 0; j <= Math.round(DURATION/lcDt); j++) {
+    const t = j*lcDt;
+    const fs = segmentAt("fanuc",t), us = segmentAt("ur",t);
+    while (completed < segs.fanuc.length && segs.fanuc[completed].t1 <= t + 1e-9) {
+      const { kind, k } = segs.fanuc[completed++];
+      if (kind === "swivel") activeGrip = 1-activeGrip;
+      if (kind === "pick" || kind === "unload") held[activeGrip] = k;
+      if (kind === "load" || kind === "place_out" || kind === "place_bin") held[activeGrip] = null;
+    }
+    const progress = fs.kind === "swivel" ? lcClamp((t-fs.t0)/(fs.t1-fs.t0), 0, 1) : 0;
+    S.fGrip.push(activeGrip);
+    S.fSwivel.push(Math.PI * (activeGrip + (1-2*activeGrip)*progress));
+    S.fHeld.push([...held]);
+    const f = paths.fanuc[indices.fanuc](t-fs.t0), u = paths.ur[indices.ur](t-us.t0);
+    fq = fanucIK(f,lcDown,fq);
+    uq = urIK(u,lcDown,uq);
+    if (!fq || !uq) throw new Error(`Unreachable ${fq ? "UR" : "FANUC"} TCP at ${t}: ${fq ? u : f}`);
+    const op = operatorPosition(t,segmentAt("operator",t));
+    S.t.push(t);
+    S.fq.push(fq); S.uq.push(uq);
+    S.fTcp.push(f); S.uTcp.push(u);
+    S.opPos.push(op); S.opIn.push(inWarning(op));
+    const m = lcClearance(fanucLinks(fq),urLinks(uq));
+    if (m < minClear.m) { minClear.m = m; minClear.at = t; }
+  }
+  return { beltSpeed, DURATION, parts, segs, zones, S, trays, minClear, util };
+}
+let lcModel;
+function rebuild(beltSpeed = CELL.infeed.speed) {
+  lcModel = cycleFor(beltSpeed);
+  return lcModel;
+}
+function current() { return lcModel; }
+rebuild(CELL.infeed.speed);
+// @@logic-end
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { GTAOPass } from "three/addons/postprocessing/GTAOPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import * as BufferGeometryUtils from "three/addons/utils/BufferGeometryUtils.js";
+
+const $ = (id) => document.getElementById(id);
+const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const RAD = Math.PI / 180;
+const DEG = 180 / Math.PI;
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+
+// ================================================================ scene (Y-up, SPEC.md §2)
+const viewport = $("viewport");
+const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance", preserveDrawingBuffer: true });
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.NeutralToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+renderer.domElement.classList.add("main");
+viewport.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(36, 1, 0.02, 40);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI * 0.495;
+controls.minDistance = 0.4;
+controls.maxDistance = 9.0;
+
+// Default view (overridden by 50-views.js when present)
+camera.position.set(2.15, 3.75, 5.45);
+controls.target.set(-0.12, 0.87, 0.48);
+controls.update();
+
+// Studio 3-point + hemisphere lighting in Y-up scene space
+const hemi = new THREE.HemisphereLight(0xffffff, 0x8a837e, 0.28);
+scene.add(hemi);
+
+const sun = new THREE.DirectionalLight(0xfff5ea, 2.4);
+sun.position.set(2.4, 4.2, 2.8);
+sun.target.position.set(0.0, 0.70, 0.25);
+sun.castShadow = true;
+sun.shadow.mapSize.set(4096, 4096);
+sun.shadow.radius = 3.5;
+sun.shadow.bias = -0.0002;
+sun.shadow.normalBias = 0.002;
+Object.assign(sun.shadow.camera, { left: -2.6, right: 2.6, top: 2.6, bottom: -2.6, near: 0.5, far: 11 });
+sun.shadow.camera.updateProjectionMatrix();
+scene.add(sun, sun.target);
+
+const fillL = new THREE.DirectionalLight(0xdce6ff, 0.50);
+fillL.position.set(-2.6, 2.0, -1.8);
+scene.add(fillL);
+
+const rimL = new THREE.DirectionalLight(0xffffff, 0.65);
+rimL.position.set(-0.8, 2.8, 3.2);
+scene.add(rimL);
+
+// Y-up world root directly matching SPEC.md §2 (x = flow, y = up, z = operator aisle)
+const world = new THREE.Group();
+scene.add(world);
+
+// Room environment (no external HDR)
+const pmrem = new THREE.PMREMGenerator(renderer);
+const room = new RoomEnvironment();
+scene.environment = pmrem.fromScene(room, 0.04).texture;
+pmrem.dispose();
+const roomGeos = new Set(), roomMats = new Set();
+room.traverse((o) => {
+  if (o.geometry) roomGeos.add(o.geometry);
+  const list = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+  list.forEach((m) => roomMats.add(m));
+});
+roomGeos.forEach((g) => g.dispose());
+roomMats.forEach((m) => m.dispose());
+
+function themeIsDark() {
+  const t = document.documentElement.dataset.theme;
+  if (t === "dark") return true;
+  if (t === "light") return false;
+  return matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
+function syncSceneTheme() {
+  const top = new THREE.Color(css("--scene-top") || "#f7f8fa");
+  const bottom = new THREE.Color(css("--scene-bottom") || "#dfe3e8");
+  const c = document.createElement("canvas");
+  c.width = 2; c.height = 256;
+  const g = c.getContext("2d");
+  const gr = g.createLinearGradient(0, 0, 0, 256);
+  gr.addColorStop(0, "#" + top.getHexString());
+  gr.addColorStop(1, "#" + bottom.getHexString());
+  g.fillStyle = gr;
+  g.fillRect(0, 0, 2, 256);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  if (scene.background && scene.background.dispose) scene.background.dispose();
+  scene.background = tex;
+
+  if (!scene.fog) scene.fog = new THREE.Fog(bottom.clone(), 8, 22);
+  else scene.fog.color.copy(bottom);
+  scene.environmentIntensity = themeIsDark() ? 0.55 : 0.75;
+}
+syncSceneTheme();
+window.addEventListener("themechange", syncSceneTheme);
+
+// Post-processing composer (MSAA + GTAO + OutputPass)
+function viewSize() {
+  return { w: Math.max(1, viewport.clientWidth), h: Math.max(1, viewport.clientHeight) };
+}
+const view0 = viewSize();
+const dpr0 = Math.min(devicePixelRatio || 1, 2);
+renderer.setPixelRatio(dpr0);
+renderer.setSize(view0.w, view0.h, false);
+camera.aspect = view0.w / view0.h;
+camera.updateProjectionMatrix();
+
+const composerTarget = new THREE.WebGLRenderTarget(Math.floor(view0.w * dpr0), Math.floor(view0.h * dpr0), {
+  type: THREE.HalfFloatType,
+  samples: 4,
+});
+const composer = new EffectComposer(renderer, composerTarget);
+composer.setSize(view0.w, view0.h);
+const gtao = new GTAOPass(scene, camera, view0.w, view0.h);
+gtao.updateGtaoMaterial({ radius: 0.18, distanceExponent: 1.5, thickness: 1.5, scale: 1.0, samples: 12 });
+gtao.blendIntensity = 0.80;
+composer.addPass(new RenderPass(scene, camera));
+composer.addPass(gtao);
+composer.addPass(new OutputPass());
+
+function fitComposer() {
+  const { w, h } = viewSize();
+  const dpr = renderer.getPixelRatio();
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  composer.setPixelRatio(dpr);
+  composer.setSize(w, h);
+}
+new ResizeObserver(fitComposer).observe(viewport);
+
+function writeHqBox(on) {
+  const boxEl = $("hq");
+  if (boxEl) boxEl.checked = on;
+}
+let hq = true;
+function shadowMapSize(px) {
+  sun.shadow.mapSize.set(px, px);
+  if (sun.shadow.map) {
+    sun.shadow.map.dispose();
+    sun.shadow.map = null;
+  }
+}
+function setQuality(on) {
+  hq = !!on;
+  try { localStorage.setItem("fanuc-ur-hq", hq ? "1" : "0"); } catch (e) {}
+  gtao.enabled = hq;
+  shadowMapSize(hq ? 4096 : 2048);
+  renderer.setPixelRatio(hq ? Math.min(devicePixelRatio || 1, 2) : 1);
+  fitComposer();
+  writeHqBox(hq);
+  return hq;
+}
+function storedHq() {
+  try {
+    const v = localStorage.getItem("fanuc-ur-hq");
+    if (v === "0" || v === "1") return v === "1";
+  } catch (e) {}
+  return null;
+}
+function autoHq() {
+  if (matchMedia("(pointer: coarse)").matches) return false;
+  if (viewport.clientWidth > 0 && viewport.clientWidth < 900) return false;
+  return true;
+}
+setQuality(storedHq() !== null ? storedHq() : autoHq());
+document.addEventListener("change", (e) => {
+  const t = e.target;
+  if (t && t.id === "hq") setQuality(t.checked);
+});
+
+let rendering = false;
+let profilesArmed = false;
+let watchT0 = 0, watchLast = 0, watchSum = 0, watchN = 0, watchDone = false;
+function noteFrameTime() {
+  if (watchDone) return;
+  const now = performance.now();
+  if (watchT0 === 0) { watchT0 = watchLast = now; return; }
+  watchSum += now - watchLast;
+  watchN += 1;
+  watchLast = now;
+  if (now - watchT0 < 3000) return;
+  watchDone = true;
+  const avg = watchN ? watchSum / watchN : 0;
+  const tripped = avg > 28 && hq;
+  if (tripped) setQuality(false);
+  window.__hqStats = { avgMs: avg, tripped };
+}
+function renderFrame() {
+  if (!profilesArmed) { profilesArmed = true; finalizeProfiles(); }
+  if (rendering) return;
+  rendering = true;
+  try { composer.render(); }
+  finally { rendering = false; }
+  noteFrameTime();
+}
+window.setQuality = setQuality;
+const mat = (color, roughness = 0.5, metalness = 0.1, extra = {}) => {
+  const physical = (extra.clearcoat > 0) || (extra.transmission > 0) || (extra.sheen > 0);
+  const Ctor = physical ? THREE.MeshPhysicalMaterial : THREE.MeshStandardMaterial;
+  return new Ctor({ color, roughness, metalness, ...extra });
+};
+const phys = (color, roughness, metalness, extra = {}) => new THREE.MeshPhysicalMaterial({ color, roughness, metalness, ...extra });
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function procTex(w, h, seed, paint, { color = false, repeat = [1, 1] } = {}) {
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const g = c.getContext("2d");
+  const img = g.createImageData(w, h);
+  paint(img.data, w, h, mulberry32(seed));
+  g.putImageData(img, 0, 0);
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  if (color) tex.colorSpace = THREE.SRGBColorSpace;
+  tex.repeat.set(repeat[0], repeat[1]);
+  return tex;
+}
+function put(data, i, r, g, b, a = 255) {
+  data[i] = r; data[i + 1] = g; data[i + 2] = b; data[i + 3] = a;
+}
+
+// Brushed metal roughness map (near-white so it modulates material.roughness)
+const brushRough = procTex(512, 512, 7, (data, w, h, rnd) => {
+  for (let y = 0; y < h; y++) {
+    const line = 225 + Math.floor(rnd() * 30);
+    for (let x = 0; x < w; x++) {
+      const v = Math.max(0, Math.min(255, line + Math.floor((rnd() - 0.5) * 28)));
+      put(data, (y * w + x) * 4, v, v, v);
+    }
+  }
+}, { repeat: [4, 4] });
+
+// Industrial conveyor belt fabric weave
+const beltFabric = procTex(256, 256, 21, (data, w, h, rnd) => {
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const warp = (x % 4) < 2;
+    const weft = (y % 4) < 2;
+    const base = warp === weft ? 236 : 210;
+    const v = Math.max(0, Math.min(255, base + Math.floor((rnd() - 0.5) * 14)));
+    put(data, (y * w + x) * 4, v, v, v);
+  }
+}, { color: true, repeat: [12, 4] });
+
+// Concrete/epoxy floor speckle
+const epoxyMap = procTex(256, 256, 31, (data, w, h, rnd) => {
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const n = rnd();
+    const speck = n > 0.92 ? 36 : n < 0.04 ? -28 : Math.floor((rnd() - 0.5) * 14);
+    const v = Math.max(0, Math.min(255, 232 + speck));
+    put(data, (y * w + x) * 4, v, v, v);
+  }
+}, { color: true, repeat: [20, 20] });
+
+// Hazard yellow/black floor tape
+const tapeMap = procTex(128, 128, 41, (data, w, h) => {
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const stripe = (Math.floor((x + y) / 16) & 1) === 0;
+    if (stripe) put(data, (y * w + x) * 4, 240, 196, 0);
+    else put(data, (y * w + x) * 4, 20, 20, 20);
+  }
+}, { color: true, repeat: [2, 2] });
+
+// Welded wire mesh texture for guard panels (alpha cutout)
+const wireMeshTex = (() => {
+  const c = document.createElement("canvas");
+  c.width = 64; c.height = 64;
+  const g = c.getContext("2d");
+  g.clearRect(0, 0, 64, 64);
+  g.fillStyle = "#262a30";
+  g.fillRect(0, 0, 64, 5);
+  g.fillRect(0, 0, 5, 64);
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+})();
+
+function floorIsDark() {
+  const t = document.documentElement.dataset.theme;
+  if (t === "dark") return true;
+  if (t === "light") return false;
+  return matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
+const brushed = { roughnessMap: brushRough };
+const stainlessBrushed = phys(0xc8cacc, 0.30, 1, brushed);
+
+const M = {
+  aluClear: phys(0xc9ccd0, 0.40, 1),
+  aluBlasted: phys(0xbcc0c6, 0.55, 1),
+  aluDark: phys(0x202328, 0.45, 0.45),
+  aluMachined: phys(0xd4d8de, 0.28, 0.95, brushed),
+  stainlessBrushed,
+  steel: phys(0xd2d6db, 0.18, 1),
+  chrome: phys(0xeceef0, 0.08, 1),
+  zinc9006: phys(0xa5a8a6, 0.5, 0.8),
+  galv: phys(0xb4b8bb, 0.45, 0.9),
+  cabinet: phys(0x3a4048, 0.42, 0.65, brushed),
+  pedestalSteel: phys(0x2f353d, 0.45, 0.60),
+  blackPlastic: phys(0x16181c, 0.65, 0),
+  blackRubber: phys(0x141518, 0.85, 0),
+  whitePOM: phys(0xf2f1ec, 0.50, 0),
+  sealBlack: phys(0x111214, 0.80, 0),
+  pcClear: phys(0xb8c8d4, 0.06, 0, {
+    transparent: true, opacity: 0.17, depthWrite: false, side: THREE.DoubleSide,
+    clearcoat: 1, clearcoatRoughness: 0.08, envMapIntensity: 1.2,
+  }),
+  wireMeshBase: new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    map: wireMeshTex,
+    alphaTest: 0.45,
+    side: THREE.DoubleSide,
+    roughness: 0.55,
+    metalness: 0.6,
+  }),
+  beltDark: phys(0x34433f, 0.78, 0, { map: beltFabric }),
+  motorBlack: phys(0x181a1e, 0.50, 0.25),
+  gearboxSilver: phys(0xb8bcc0, 0.35, 0.90),
+  floor: phys(floorIsDark() ? 0x2b2e33 : 0xa5aab0, 0.86, 0.02, { map: epoxyMap }),
+  tape: phys(0xffffff, 0.60, 0, { map: tapeMap }),
+  warnYellow: new THREE.MeshBasicMaterial({ color: 0xf0b400, transparent: true, opacity: 0.14, side: THREE.DoubleSide, depthWrite: false }),
+  warnRing: new THREE.MeshBasicMaterial({ color: 0xe6a800, side: THREE.DoubleSide }),
+  protectRed: new THREE.MeshBasicMaterial({ color: 0xd83028, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false }),
+  protectRing: new THREE.MeshBasicMaterial({ color: 0xd83028, side: THREE.DoubleSide }),
+  curtainYellow: phys(0xf2be00, 0.35, 0.15, { clearcoat: 0.4, clearcoatRoughness: 0.3 }),
+  curtainBeam: new THREE.MeshBasicMaterial({ color: 0xff9800, transparent: true, opacity: 0.38, depthWrite: false }),
+  scannerYellow: phys(0xf2be00, 0.40, 0.1),
+  fanucYellow: phys(0xf5b800, 0.34, 0.12, { clearcoat: 0.5, clearcoatRoughness: 0.25 }),
+  urBlue: phys(0x4a8ec2, 0.38, 0.20, { clearcoat: 0.35, clearcoatRoughness: 0.30 }),
+  urGrey: phys(0xc8cdd2, 0.36, 0.85),
+  urDark: phys(0x23272d, 0.50, 0.20),
+  housingAlu: phys(0xd0d5dc, 0.30, 0.92, brushed),
+  coverSlate: phys(0x2c3643, 0.40, 0.55),
+  screwSteel: phys(0x282c32, 0.28, 0.90),
+  trayPOM: phys(0x242830, 0.58, 0.05),
+  binRed: phys(0xa82e2a, 0.45, 0.08),
+  fixtureBlue: phys(0x255a8a, 0.42, 0.40),
+  lampRed: phys(0x5a1010, 0.4, 0, { emissive: 0xff2a2a, emissiveIntensity: 0 }),
+  lampAmber: phys(0x5a3a08, 0.4, 0, { emissive: 0xffb020, emissiveIntensity: 0 }),
+  lampGreen: phys(0x0d4a1a, 0.4, 0, { emissive: 0x3dff6a, emissiveIntensity: 0 }),
+  estopRed: phys(0xc0201a, 0.4, 0),
+  estopYellow: phys(0xf2c400, 0.5, 0),
+  screen: phys(0x0b0d10, 0.3, 0, { emissive: 0xffffff, emissiveIntensity: 0 }),
+  lens: mat(0x111316, 0.20, 0.30),
+  glass: new THREE.MeshPhysicalMaterial({ color: 0xd8e6ee, roughness: 0.05, transparent: true, opacity: 0.16, depthWrite: false }),
+};
+
+function makeWireMeshMat(w, h) {
+  const m = M.wireMeshBase.clone();
+  const tex = wireMeshTex.clone();
+  tex.repeat.set(Math.max(1, Math.round(w / 0.038)), Math.max(1, Math.round(h / 0.038)));
+  tex.needsUpdate = true;
+  m.map = tex;
+  return m;
+}
+
+function applyFloorTheme() {
+  M.floor.color.set(floorIsDark() ? 0x2b2e33 : 0x9fa5ac);
+}
+window.addEventListener("themechange", applyFloorTheme);
+function mesh(geo, m, parent = world) {
+  const o = new THREE.Mesh(geo, m);
+  o.castShadow = o.receiveShadow = true;
+  parent.add(o);
+  return o;
+}
+function box(w, h, d, m, x, y, z, parent) {
+  const o = mesh(new THREE.BoxGeometry(w, h, d), m, parent);
+  o.position.set(x, y, z);
+  return o;
+}
+function rbox(w, h, d, r, m, x, y, z, parent) {
+  const rr = Math.max(1e-5, Math.min(r, Math.min(w, h, d) / 2 - 1e-5));
+  const o = mesh(new RoundedBoxGeometry(w, h, d, 4, rr), m, parent);
+  o.position.set(x, y, z);
+  return o;
+}
+// Vertical cylinder along Y (Y-up)
+function vcyl(r, h, m, x, y, z, seg = 32, parent) {
+  const o = mesh(new THREE.CylinderGeometry(r, r, h, seg), m, parent);
+  o.position.set(x, y, z);
+  return o;
+}
+// Horizontal cylinder along X
+function hcylX(r, len, m, x, y, z, seg = 32, parent) {
+  const o = vcyl(r, len, m, x, y, z, seg, parent);
+  o.rotation.z = Math.PI / 2;
+  return o;
+}
+// Horizontal cylinder along Z
+function hcylZ(r, len, m, x, y, z, seg = 32, parent) {
+  const o = vcyl(r, len, m, x, y, z, seg, parent);
+  o.rotation.x = Math.PI / 2;
+  return o;
+}
+const UP = V(0, 1, 0);
+function rod(r, m, seg = 12) { return mesh(new THREE.CylinderGeometry(r, r, 1, seg), m); }
+function placeRod(o, a, b) {
+  const d = b.clone().sub(a);
+  o.position.copy(a).addScaledVector(d, 0.5);
+  o.scale.set(1, d.length(), 1);
+  o.quaternion.setFromUnitVectors(UP, d.normalize());
+}
+
+function stripeTexture(base, stripe, repeatX, repeatY = 1) {
+  const c = document.createElement("canvas");
+  c.width = 256; c.height = 16;
+  const g = c.getContext("2d");
+  g.fillStyle = base; g.fillRect(0, 0, 256, 16);
+  g.fillStyle = stripe;
+  for (let i = 0; i < 256; i += 32) g.fillRect(i, 0, 4, 16);
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(repeatX, repeatY);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  return tex;
+}
+
+const toShape = (pts) => (pts instanceof THREE.Shape ? pts : new THREE.Shape(pts.map((p) => new THREE.Vector2(p.x !== undefined ? p.x : p[0], p.y !== undefined ? p.y : p[1]))));
+
+function shrinkOutline(pts, dist) {
+  const list = pts instanceof THREE.Shape ? pts.getPoints(48) : pts;
+  const xy = list.map((p) => [p.x !== undefined ? p.x : p[0], p.y !== undefined ? p.y : p[1]]);
+  let cx = 0, cy = 0;
+  for (const [x, y] of xy) { cx += x; cy += y; }
+  cx /= xy.length; cy /= xy.length;
+  return xy.map(([x, y]) => {
+    const dx = cx - x, dy = cy - y, len = Math.hypot(dx, dy) || 1;
+    const t = Math.min(dist, len * 0.85);
+    return [x + (dx / len) * t, y + (dy / len) * t];
+  });
+}
+
+function extrudeShapeGeo(pts, depthTotal, bevel) {
+  const b = Math.max(0, Math.min(bevel || 0, depthTotal / 2 - 1e-4));
+  const geo = new THREE.ExtrudeGeometry(toShape(b > 0 ? shrinkOutline(pts, b) : pts), {
+    depth: depthTotal - 2 * b, bevelEnabled: b > 0, bevelThickness: b, bevelSize: b, bevelOffset: 0, bevelSegments: 3, curveSegments: 24,
+  });
+  if (b > 0) geo.translate(0, 0, b);
+  return geo;
+}
+
+// Plan outline [[x, y], ...] extruded along Z from z0 to z1
+function extrudeXY(pts, z0, z1, m, parent, bevel = 0) {
+  const geo = extrudeShapeGeo(pts, z1 - z0, bevel);
+  geo.translate(0, 0, z0);
+  return mesh(geo, m, parent);
+}
+
+// Floor plan outline [[x, z], ...] extruded vertically along Y from y0 to y1 (Y-up)
+function extrudeXZ(pts, y0, y1, m, parent, bevel = 0) {
+  const geo = extrudeShapeGeo(pts, y1 - y0, bevel);
+  geo.rotateX(Math.PI / 2);
+  geo.translate(0, y1, 0);
+  return mesh(geo, m, parent);
+}
+
+// Profile [[r, y], ...] revolved about the local Y axis (Y-up)
+function lathe(prof, m, parent, seg = 48) {
+  const geo = new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(r, y)), seg);
+  return mesh(geo, m, parent);
+}
+
+function tubeGeo(pts, r, tub, rad) {
+  const curve = new THREE.CatmullRomCurve3(pts.map((p) => (p.isVector3 ? p : V(p[0], p[1], p[2]))), false, "centripetal");
+  return new THREE.TubeGeometry(curve, tub, r, rad, false);
+}
+function tubeAlong(pts, r, m, parent, tub = 64, rad = 12) {
+  const o = mesh(tubeGeo(pts, r, tub, rad), m, parent);
+  o.userData.tube = { r, tub, rad };
+  return o;
+}
+function updateTube(o, pts) {
+  const { r, tub, rad } = o.userData.tube;
+  o.geometry.dispose();
+  o.geometry = tubeGeo(pts, r, tub, rad);
+}
+
+// 40x40 slot-8 aluminium extrusion section, metres. Unit-length along Z, instanced with scale z = length.
+function profile4040Shape() {
+  const s = 0.001, r = 4;
+  const face = [[20, -4], [15.5, -4], [15.5, -8], [9.75, -8], [7.75, -6], [7.75, 6], [9.75, 8], [15.5, 8], [15.5, 4], [20, 4]];
+  const shape = new THREE.Shape();
+  for (let k = 0; k < 4; k++) {
+    const a = k * Math.PI / 2, c = Math.cos(a), si = Math.sin(a);
+    const R = ([x, y]) => [(x * c - y * si) * s, (x * si + y * c) * s];
+    const [cx, cy] = R([16, -16]);
+    if (k === 0) shape.moveTo(...R([16, -20]));
+    shape.absarc(cx, cy, r * s, a - Math.PI / 2, a, false);
+    for (const p of face) shape.lineTo(...R(p));
+    shape.lineTo(...R([20, 16]));
+  }
+  shape.closePath();
+  const hole = (x, y, rad) => { const p = new THREE.Path(); p.absarc(x * s, y * s, rad * s, 0, Math.PI * 2, true); return p; };
+  shape.holes.push(hole(0, 0, 3.4), hole(14, 14, 3), hole(-14, 14, 3), hole(-14, -14, 3), hole(14, -14, 3));
+  return shape;
+}
+
+const PROFILE_CAP = 800;
+const BOLT_CAP = 1500;
+const profileGeo = new THREE.ExtrudeGeometry(profile4040Shape(), { depth: 1, bevelEnabled: false, curveSegments: 3 });
+const boltGeo = new THREE.LatheGeometry([
+  new THREE.Vector2(0, 0.0022), new THREE.Vector2(0.0048, 0.0022), new THREE.Vector2(0.0064, 0.0015),
+  new THREE.Vector2(0.007, 0.0006), new THREE.Vector2(0.007, -0.0015), new THREE.Vector2(0.0062, -0.0022), new THREE.Vector2(0, -0.0022),
+], 20);
+
+function makeInstanced(geo, material, cap, parent) {
+  const o = new THREE.InstancedMesh(geo, material, cap);
+  o.count = 0;
+  o.castShadow = o.receiveShadow = true;
+  o.frustumCulled = false;
+  o.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  parent.add(o);
+  return o;
+}
+
+const profiles = makeInstanced(profileGeo, M.aluClear, PROFILE_CAP, world);
+const bolts = makeInstanced(boltGeo, M.steel, BOLT_CAP, world);
+const extraProfiles = new Map();
+const extraBolts = new Map();
+
+function pooledMesh(map, parent, geo, material, cap) {
+  let o = map.get(parent);
+  if (!o) { o = makeInstanced(geo, material, cap, parent); map.set(parent, o); }
+  return o;
+}
+
+const _beamQ = new THREE.Quaternion();
+const _beamS = new THREE.Vector3();
+const _beamM = new THREE.Matrix4();
+const _beamD = new THREE.Vector3();
+const _zAxis = V(0, 0, 1);
+const _boltP = new THREE.Vector3();
+const _boltN = new THREE.Vector3();
+let profileWarned = false, boltWarned = false;
+
+function profileBeam(a, b, parent = world) {
+  const pool = parent === world ? profiles : pooledMesh(extraProfiles, parent, profileGeo, M.aluClear, PROFILE_CAP);
+  _beamD.subVectors(b, a);
+  const L = _beamD.length();
+  if (L < 1e-6) return pool;
+  if (pool.count >= PROFILE_CAP) { if (!profileWarned) { profileWarned = true; console.warn("profileBeam: capacity", PROFILE_CAP); } return pool; }
+  _beamD.multiplyScalar(1 / L);
+  _beamQ.setFromUnitVectors(_zAxis, _beamD);
+  _beamS.set(1, 1, L);
+  _beamM.compose(a, _beamQ, _beamS);
+  pool.setMatrixAt(pool.count, _beamM);
+  pool.count += 1;
+  return pool;
+}
+
+let profilesFinal = false;
+function finalizeProfiles() {
+  if (profilesFinal) return;
+  profilesFinal = true;
+  profiles.instanceMatrix.needsUpdate = true;
+  bolts.instanceMatrix.needsUpdate = true;
+  extraProfiles.forEach((o) => { o.instanceMatrix.needsUpdate = true; });
+  extraBolts.forEach((o) => { o.instanceMatrix.needsUpdate = true; });
+}
+
+function addBolt(pos, normal, parent = world) {
+  const pool = parent === world ? bolts : pooledMesh(extraBolts, parent, boltGeo, M.steel, BOLT_CAP);
+  if (pool.count >= BOLT_CAP) { if (!boltWarned) { boltWarned = true; console.warn("addBolt: capacity", BOLT_CAP); } return pool; }
+  _boltN.copy(normal);
+  if (_boltN.lengthSq() < 1e-12) _boltN.copy(_zAxis); else _boltN.normalize();
+  _beamQ.setFromUnitVectors(UP, _boltN);
+  _boltP.copy(pos).addScaledVector(_boltN, 0.0022);
+  _beamS.set(1, 1, 1);
+  _beamM.compose(_boltP, _beamQ, _beamS);
+  pool.setMatrixAt(pool.count, _beamM);
+  pool.count += 1;
+  return pool;
+}
+
+function labelPlane(text, w, h, opts = {}) {
+  const { bg = "#ffffff", fg = "#111111", font = "700 130px system-ui, sans-serif", px = 256 } = opts;
+  const c = document.createElement("canvas");
+  c.height = px;
+  c.width = Math.max(px, Math.round(px * w / h));
+  const g = c.getContext("2d");
+  g.fillStyle = bg; g.fillRect(0, 0, c.width, c.height);
+  g.fillStyle = fg; g.font = font; g.textAlign = "center"; g.textBaseline = "middle";
+  g.fillText(text, c.width / 2, c.height / 2);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  const o = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.72 }));
+  o.receiveShadow = true;
+  return o;
+}
+// Guard fence (40x40 slot-8 aluminium, wire mesh & polycarbonate panels), fixture light curtain,
+// safety laser scanner & floor zones, stack light, and HMI console (Y-up, SPEC.md §2).
+const F = CELL.fence;
+const HALF = 0.02;
+
+// ---------------------------------------------------------------- floor & cell perimeter
+const floorMat = M.floor.clone();
+const floor = mesh(new THREE.PlaneGeometry(16, 16), floorMat);
+floor.rotation.x = -Math.PI / 2;
+floor.position.y = 0;
+floor.castShadow = false;
+floor.receiveShadow = true;
+
+function toneFloor() {
+  floorMat.color.set(floorIsDark() ? 0x2b2e33 : 0xa3a9b0);
+  floorMat.roughness = 0.86;
+  floorMat.metalness = 0.02;
+}
+window.addEventListener("themechange", () => queueMicrotask(toneFloor));
+queueMicrotask(toneFloor);
+
+// Hazard tape framing the guarded zone & collaborative workspace
+function floorTape(x, z, w, d) {
+  const o = mesh(new THREE.PlaneGeometry(w, d), M.tape);
+  o.rotation.x = -Math.PI / 2;
+  o.position.set(x, 0.0015, z);
+  o.castShadow = false;
+  o.receiveShadow = true;
+  return o;
+}
+const tx0 = F.x0 - 0.14, tx1 = F.x1 + 0.14, tz0 = F.z0 - 0.14, tz1 = 1.52;
+const tw = 0.05;
+floorTape((tx0 + tx1) / 2, tz0, tx1 - tx0 + tw, tw);
+floorTape((tx0 + tx1) / 2, tz1, tx1 - tx0 + tw, tw);
+floorTape(tx0, (tz0 + tz1) / 2, tw, tz1 - tz0 - tw);
+floorTape(tx1, (tz0 + tz1) / 2, tw, tz1 - tz0 - tw);
+
+// ---------------------------------------------------------------- safety scanner floor zones (CELL.scanner)
+const SC = CELL.scanner;
+function addScannerZone(radius, fillMat, ringMat, yOffset) {
+  const dz = Math.max(-radius, F.z1 - SC.center[1]);
+  const alpha = Math.asin(clamp(-dz / radius, -1, 1));
+  const thetaStart = Math.PI - alpha;
+  const thetaLen = Math.PI + 2 * alpha;
+
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(radius - 0.03, 72, thetaStart, thetaLen), fillMat);
+  disc.rotation.x = -Math.PI / 2;
+  disc.position.set(SC.center[0], yOffset, SC.center[1]);
+  disc.receiveShadow = true;
+  world.add(disc);
+
+  const ring = new THREE.Mesh(new THREE.RingGeometry(radius - 0.032, radius, 84, 1, thetaStart, thetaLen), ringMat);
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.set(SC.center[0], yOffset + 0.0004, SC.center[1]);
+  world.add(ring);
+}
+addScannerZone(SC.warn, M.warnYellow, M.warnRing, 0.002);
+addScannerZone(SC.protect, M.protectRed, M.protectRing, 0.003);
+
+// Safety laser scanner mounted on front edge of the UR table (facing +z operator aisle)
+const scannerGroup = new THREE.Group();
+scannerGroup.position.set(SC.center[0], 0.74, 1.435);
+world.add(scannerGroup);
+rbox(0.112, 0.020, 0.060, 0.002, M.aluDark, 0, -0.015, -0.020, scannerGroup);
+rbox(0.102, 0.056, 0.096, 0.006, M.scannerYellow, 0, 0.020, 0.010, scannerGroup);
+rbox(0.096, 0.044, 0.088, 0.004, M.blackPlastic, 0, 0.064, 0.010, scannerGroup);
+const scanWindow = vcyl(0.040, 0.032, M.lens, 0, 0.064, 0.020, 28, scannerGroup);
+scanWindow.scale.set(1.1, 1, 0.85);
+// Subtle horizontal laser scan fan near floor level
+const scanFan = new THREE.Mesh(
+  new THREE.CircleGeometry(SC.protect, 48, Math.PI * 1.15, Math.PI * 0.70),
+  new THREE.MeshBasicMaterial({ color: 0xff3b30, transparent: true, opacity: 0.06, side: THREE.DoubleSide, depthWrite: false })
+);
+scanFan.rotation.x = -Math.PI / 2;
+scanFan.position.set(SC.center[0], 0.08, 1.44);
+world.add(scanFan);
+
+// ---------------------------------------------------------------- brackets & extrusion helpers
+function bracketGeometry(mirror) {
+  const upright = new RoundedBoxGeometry(0.016, 0.040, 0.004, 2, 0.0008);
+  upright.translate(0.008, 0.020, 0.002);
+  const arm = new RoundedBoxGeometry(0.035, 0.016, 0.004, 2, 0.0008);
+  arm.translate(0.0175, 0.008, 0.002);
+  const rib = new RoundedBoxGeometry(0.020, 0.0035, 0.003, 2, 0.0004);
+  rib.rotateZ(-Math.PI / 4);
+  rib.translate(0.014, 0.014, 0.002);
+  const geo = BufferGeometryUtils.mergeGeometries([upright, arm, rib]);
+  if (mirror) { geo.scale(1, 1, -1); geo.computeVertexNormals(); }
+  return geo;
+}
+const BRACKET_CAP = 200;
+function makeBrackets(mirror) {
+  const o = new THREE.InstancedMesh(bracketGeometry(mirror), M.zinc9006, BRACKET_CAP);
+  o.count = 0;
+  o.castShadow = o.receiveShadow = true;
+  o.frustumCulled = false;
+  world.add(o);
+  return o;
+}
+const brackets = makeBrackets(false);
+const bracketsMir = makeBrackets(true);
+const _bQ = new THREE.Quaternion();
+const _bM = new THREE.Matrix4();
+const _bS = new THREE.Vector3(1, 1, 1);
+let bracketsFull = false;
+
+function putBracket(pool, origin, quat) {
+  if (pool.count >= BRACKET_CAP) { if (!bracketsFull) { bracketsFull = true; console.warn("brackets: capacity", BRACKET_CAP); } return; }
+  _bM.compose(origin, quat, _bS);
+  pool.setMatrixAt(pool.count++, _bM);
+}
+function boltAt(origin, quat, lx, ly, lz, nx, ny, nz) {
+  addBolt(V(lx, ly, lz).applyQuaternion(quat).add(origin), V(nx, ny, nz).applyQuaternion(quat));
+}
+function addJointBracket(x, z, yBottom, along, proud) {
+  const dir = along.clone();
+  if (dir.lengthSq() < 1e-8) return;
+  dir.normalize();
+  const up = V(0, 1, 0);
+  const thick = V().crossVectors(dir, up).normalize();
+  const out = V(dir.z, 0, -dir.x);
+  if (out.x * x + out.z * (z - (F.z0 + F.z1) / 2) < 0) out.negate();
+  const mirror = thick.dot(out) < 0;
+  _bQ.setFromRotationMatrix(new THREE.Matrix4().makeBasis(dir, up, thick));
+  const origin = V(x, yBottom, z).addScaledVector(dir, -0.016).addScaledVector(out, 0.0195 + (proud || 0));
+  putBracket(mirror ? bracketsMir : brackets, origin, _bQ);
+  const sz = mirror ? -1 : 1;
+  boltAt(origin, _bQ, 0.009, 0.028, sz * 0.004, 0, 0, sz);
+  boltAt(origin, _bQ, 0.026, 0.008, sz * 0.004, 0, 0, sz);
+}
+
+function hRail(x0, z0, x1, z1, yc, proud = 0) {
+  profileBeam(V(x0, yc, z0), V(x1, yc, z1));
+  const dx = x1 - x0, dz = z1 - z0;
+  addJointBracket(x0, z0, yc - HALF, V(dx, 0, dz), proud);
+  addJointBracket(x1, z1, yc - HALF, V(-dx, 0, -dz), proud);
+}
+
+function endPlug(x, y, z, dir) {
+  const n = dir.clone().normalize();
+  const o = rbox(0.036, 0.036, 0.004, 0.001, M.blackPlastic, 0, 0, 0);
+  o.quaternion.setFromUnitVectors(V(0, 0, 1), n);
+  o.position.set(x, y, z).addScaledVector(n, 0.001);
+  return o;
+}
+
+function addPost(x, z, h = F.h) {
+  profileBeam(V(x, 0.012, z), V(x, h, z));
+  endPlug(x, h, z, V(0, 1, 0));
+  rbox(0.088, 0.008, 0.088, 0.0015, M.aluDark, x, 0.008, z);
+  for (const sx of [-0.030, 0.030]) for (const sz of [-0.030, 0.030]) {
+    addBolt(V(x + sx, 0.012, z + sz), UP);
+  }
+}
+
+// ---------------------------------------------------------------- guard fence (CELL.fence)
+const guardPanels = [];
+Object.defineProperty(guardPanels, "visible", {
+  get() { return guardPanels.every((o) => o.visible); },
+  set(v) { for (const o of guardPanels) o.visible = v; },
+});
+
+function addPcPanel(w, h, thickX, x, y, z, rotY = 0) {
+  const sx = thickX ? 0.006 : w;
+  const sz = thickX ? w : 0.006;
+  const o = rbox(sx, h, sz, 0.001, M.pcClear, x, y, z);
+  o.castShadow = false;
+  o.receiveShadow = false;
+  if (rotY) o.rotation.y = rotY;
+  guardPanels.push(o);
+  // Black EPDM gasket trim
+  const gx = thickX ? 0.008 : w - 0.004;
+  const gz = thickX ? w - 0.004 : 0.008;
+  for (const sy of [-1, 1]) {
+    const b = rbox(gx, 0.007, gz, 0.0006, M.sealBlack, x, y + sy * (h / 2 - 0.003), z);
+    b.castShadow = false;
+    guardPanels.push(b);
+  }
+  return o;
+}
+
+function addMeshPanel(w, h, alongZ, x, y, z) {
+  const matMesh = makeWireMeshMat(w, h);
+  const geo = new THREE.PlaneGeometry(w, h);
+  const o = mesh(geo, matMesh);
+  o.position.set(x, y, z);
+  if (alongZ) o.rotation.y = Math.PI / 2;
+  o.castShadow = false;
+  guardPanels.push(o);
+  return o;
+}
+
+// Posts around perimeter
+const backPostsX = [F.x0, 0.0, F.x1];
+const frontPostsX = [F.x0, -0.35, 0.35, F.x1];
+const leftPostsZ = [F.z0, -0.35, F.z1];
+const rightPostsZ = [F.z0, -0.15, F.z1];
+
+const postSeen = new Set();
+function ensurePost(x, z) {
+  const key = `${x.toFixed(3)},${z.toFixed(3)}`;
+  if (postSeen.has(key)) return;
+  postSeen.add(key);
+  addPost(x, z, F.h);
+}
+for (const x of backPostsX) ensurePost(x, F.z0);
+for (const x of frontPostsX) ensurePost(x, F.z1);
+for (const z of leftPostsZ) ensurePost(F.x0, z);
+for (const z of rightPostsZ) ensurePost(F.x1, z);
+
+const INSET = HALF - 0.003;
+
+// Back wall (z = F.z0): full height wire mesh below + polycarbonate above
+for (let i = 0; i < backPostsX.length - 1; i++) {
+  const xa = backPostsX[i] + INSET, xb = backPostsX[i + 1] - INSET;
+  const cx = (xa + xb) / 2, w = xb - xa - 0.006;
+  hRail(xa, F.z0, xb, F.z0, 0.08);
+  hRail(xa, F.z0, xb, F.z0, 1.05);
+  hRail(xa, F.z0, xb, F.z0, F.h - HALF);
+  addMeshPanel(w, 0.93, false, cx, 0.565, F.z0);
+  addPcPanel(w, 0.89, false, cx, 1.515, F.z0);
+}
+
+// Left wall (x = F.x0): infeed conveyor pass-through at z = -0.60, y = 0.72..1.05
+{
+  const zBack = leftPostsZ[0] + INSET, zMid = leftPostsZ[1] - INSET;
+  const zMid2 = leftPostsZ[1] + INSET, zFront = leftPostsZ[2] - INSET;
+  // Bay 1 (z = -0.95..-0.35): accommodates infeed belt (z = -0.60, width = 0.30 -> -0.75..-0.45)
+  hRail(F.x0, zBack, F.x0, zMid, 0.08);
+  hRail(F.x0, zBack, F.x0, zMid, 0.70);
+  hRail(F.x0, zBack, F.x0, zMid, 1.05);
+  hRail(F.x0, zBack, F.x0, zMid, F.h - HALF);
+  addMeshPanel(zMid - zBack - 0.006, 0.58, true, F.x0, 0.39, (zBack + zMid) / 2);
+  addPcPanel(zMid - zBack - 0.006, 0.89, true, F.x0, 1.515, (zBack + zMid) / 2);
+  // Bay 2 (z = -0.35..+0.30)
+  hRail(F.x0, zMid2, F.x0, zFront, 0.08);
+  hRail(F.x0, zMid2, F.x0, zFront, 1.05);
+  hRail(F.x0, zMid2, F.x0, zFront, F.h - HALF);
+  addMeshPanel(zFront - zMid2 - 0.006, 0.93, true, F.x0, 0.565, (zMid2 + zFront) / 2);
+  addPcPanel(zFront - zMid2 - 0.006, 0.89, true, F.x0, 1.515, (zMid2 + zFront) / 2);
+}
+
+// Right wall (x = F.x1): outfeed conveyor pass-through at z = -0.40, y = 0.72..1.05
+{
+  const zBack = rightPostsZ[0] + INSET, zMid = rightPostsZ[1] - INSET;
+  const zMid2 = rightPostsZ[1] + INSET, zFront = rightPostsZ[2] - INSET;
+  // Bay 1 (z = -0.95..-0.15): accommodates outfeed belt (z = -0.40, width = 0.30 -> -0.55..-0.25)
+  hRail(F.x1, zBack, F.x1, zMid, 0.08);
+  hRail(F.x1, zBack, F.x1, zMid, 0.70);
+  hRail(F.x1, zBack, F.x1, zMid, 1.05);
+  hRail(F.x1, zBack, F.x1, zMid, F.h - HALF);
+  addMeshPanel(zMid - zBack - 0.006, 0.58, true, F.x1, 0.39, (zBack + zMid) / 2);
+  addPcPanel(zMid - zBack - 0.006, 0.89, true, F.x1, 1.515, (zBack + zMid) / 2);
+  // Bay 2 (z = -0.15..+0.30)
+  hRail(F.x1, zMid2, F.x1, zFront, 0.08);
+  hRail(F.x1, zMid2, F.x1, zFront, 1.05);
+  hRail(F.x1, zMid2, F.x1, zFront, F.h - HALF);
+  addMeshPanel(zFront - zMid2 - 0.006, 0.93, true, F.x1, 0.565, (zMid2 + zFront) / 2);
+  addPcPanel(zFront - zMid2 - 0.006, 0.89, true, F.x1, 1.515, (zMid2 + zFront) / 2);
+}
+
+// Front wall (z = F.z1 = 0.30):
+// - Left bay [-1.00, -0.35]: lower opening below y = 0.70 clears reject bin at [-0.45, 0.65, 0.20]
+{
+  const xa = frontPostsX[0] + INSET, xb = frontPostsX[1] - INSET;
+  const cx = (xa + xb) / 2, w = xb - xa - 0.006;
+  hRail(xa, F.z1, xb, F.z1, 0.70);
+  hRail(xa, F.z1, xb, F.z1, 1.05);
+  hRail(xa, F.z1, xb, F.z1, F.h - HALF);
+  addMeshPanel(w, 0.31, false, cx, 0.875, F.z1);
+  addPcPanel(w, 0.89, false, cx, 1.515, F.z1);
+}
+// - Center bay [-0.35, +0.35]: Fixture Window + Safety Light Curtain!
+{
+  const xa = frontPostsX[1] + INSET, xb = frontPostsX[2] - INSET;
+  const cx = (xa + xb) / 2, w = xb - xa - 0.006;
+  const winY0 = 0.77, winY1 = 1.65;
+  hRail(xa, F.z1, xb, F.z1, 0.08);
+  hRail(xa, F.z1, xb, F.z1, winY0 - HALF);
+  hRail(xa, F.z1, xb, F.z1, winY1 + HALF);
+  hRail(xa, F.z1, xb, F.z1, F.h - HALF);
+  // Lower wire mesh below fixture window, upper polycarbonate transom above
+  addMeshPanel(w, winY0 - 0.14, false, cx, (0.10 + winY0 - 0.04) / 2, F.z1);
+  addPcPanel(w, F.h - winY1 - 0.08, false, cx, (winY1 + 0.04 + F.h - 0.04) / 2, F.z1);
+
+  // Light curtain emitter & receiver columns inside the fixture window
+  const lcY0 = winY0 + 0.01, lcY1 = winY1 - 0.01, lcH = lcY1 - lcY0, lcYc = (lcY0 + lcY1) / 2;
+  for (const sg of [-1, 1]) {
+    const lx = sg * 0.312;
+    rbox(0.032, lcH, 0.036, 0.003, M.curtainYellow, lx, lcYc, F.z1);
+    rbox(0.012, lcH - 0.04, 0.010, 0.001, M.blackPlastic, lx - sg * 0.012, lcYc, F.z1);
+    // Mounting brackets to adjacent posts
+    for (const by of [lcY0 + 0.04, lcY1 - 0.04]) {
+      rbox(0.025, 0.024, 0.026, 0.002, M.zinc9006, sg * 0.33, by, F.z1);
+    }
+    // Status LED cap on top
+    rbox(0.034, 0.016, 0.038, 0.002, M.blackPlastic, lx, lcY1 + 0.008, F.z1);
+  }
+  // Optical safety curtain beams across the fixture opening
+  const beamPts = [];
+  const nBeams = 12;
+  for (let i = 0; i < nBeams; i++) {
+    const by = lerp(lcY0 + 0.04, lcY1 - 0.04, i / (nBeams - 1));
+    beamPts.push(-0.295, by, F.z1, 0.295, by, F.z1);
+  }
+  const beamGeo = new THREE.BufferGeometry();
+  beamGeo.setAttribute("position", new THREE.Float32BufferAttribute(beamPts, 3));
+  const beams = new THREE.LineSegments(beamGeo, M.curtainBeam);
+  world.add(beams);
+}
+// - Right bay [+0.35, +1.00]:
+{
+  const xa = frontPostsX[2] + INSET, xb = frontPostsX[3] - INSET;
+  const cx = (xa + xb) / 2, w = xb - xa - 0.006;
+  hRail(xa, F.z1, xb, F.z1, 0.08);
+  hRail(xa, F.z1, xb, F.z1, 1.05);
+  hRail(xa, F.z1, xb, F.z1, F.h - HALF);
+  addMeshPanel(w, 0.93, false, cx, 0.565, F.z1);
+  addPcPanel(w, 0.89, false, cx, 1.515, F.z1);
+}
+
+// ---------------------------------------------------------------- stack light on front-right post
+const stackLamps = { red: M.lampRed, amber: M.lampAmber, green: M.lampGreen };
+function stackTurn(r, y0, y1, material) {
+  const c = Math.min(0.001, (y1 - y0) / 4, r / 3);
+  const o = lathe([[0, y0], [r - c, y0], [r, y0 + c], [r, y1 - c], [r - c, y1], [0, y1]], material);
+  o.position.set(F.x1, 0, F.z1);
+  return o;
+}
+let stackY = F.h + 0.004;
+stackTurn(0.034, stackY, stackY + 0.032, M.blackPlastic); stackY += 0.032;
+stackTurn(0.012, stackY, stackY + 0.140, M.blackPlastic); stackY += 0.140;
+stackTurn(0.030, stackY, stackY + 0.048, stackLamps.green); stackY += 0.048;
+stackTurn(0.030, stackY, stackY + 0.048, stackLamps.amber); stackY += 0.048;
+stackTurn(0.030, stackY, stackY + 0.048, stackLamps.red); stackY += 0.048;
+stackTurn(0.032, stackY, stackY + 0.024, M.blackPlastic);
+// Default amber standby glow until live loop takes over
+stackLamps.amber.emissiveIntensity = 1.2;
+
+function mushroom(parent, x, y, z, axis) {
+  const g = new THREE.Group();
+  parent.add(g);
+  g.position.set(x, y, z);
+  g.quaternion.setFromUnitVectors(UP, axis.clone().normalize());
+  lathe([[0, -0.001], [0.028, -0.001], [0.030, 0.001], [0.030, 0.004], [0.026, 0.0055], [0, 0.0055]], M.estopYellow, g);
+  lathe([[0, 0.0055], [0.015, 0.0055], [0.019, 0.0085], [0.019, 0.015], [0.011, 0.0175], [0, 0.017]], M.estopRed, g);
+  return g;
+}
+
+// ---------------------------------------------------------------- HMI console on front-left post
+const hmiRoot = new THREE.Group();
+hmiRoot.position.set(-1.10, 1.38, 0.44);
+hmiRoot.rotation.y = 0.34;
+world.add(hmiRoot);
+
+rbox(0.40, 0.29, 0.056, 0.005, M.aluDark, 0, 0, 0, hmiRoot);
+const hmiCanvas = document.createElement("canvas");
+hmiCanvas.width = 512;
+hmiCanvas.height = 384;
+const hmiTexture = new THREE.CanvasTexture(hmiCanvas);
+hmiTexture.colorSpace = THREE.SRGBColorSpace;
+const hmiScreen = { canvas: hmiCanvas, texture: hmiTexture };
+
+{
+  const g = hmiCanvas.getContext("2d");
+  g.fillStyle = "#12171e";
+  g.fillRect(0, 0, 512, 384);
+  g.fillStyle = "#f5b800";
+  g.font = "700 32px system-ui, sans-serif";
+  g.fillText("FANUC + UR5e CELL", 26, 54);
+  g.fillStyle = "#58a6ff";
+  g.font = "600 26px system-ui, sans-serif";
+  g.fillText("STANDBY · INTERLOCK OK", 26, 102);
+  g.fillStyle = "#d8e0ea";
+  g.font = "500 24px ui-monospace, monospace";
+  g.fillText("INFEED   0.10 m/s", 26, 168);
+  g.fillText("FIXTURE  MUTEX READY", 26, 212);
+  g.fillText("SCANNER  WARN 1.20 m", 26, 256);
+  g.fillText("TRAYS    2 x (2 x 3)", 26, 300);
+  hmiTexture.needsUpdate = true;
+}
+
+const screenMat = M.screen.clone();
+screenMat.map = hmiTexture;
+screenMat.emissiveMap = hmiTexture;
+screenMat.emissiveIntensity = 0.26;
+const hmiFace = mesh(new THREE.PlaneGeometry(0.24, 0.18), screenMat, hmiRoot);
+hmiFace.castShadow = false;
+hmiFace.position.set(0, 0.036, 0.029);
+
+mushroom(hmiRoot, -0.09, -0.09, 0.028, V(0, 0, 1));
+for (const [bx, bm] of [[0.02, M.lampGreen], [0.065, M.whitePOM]]) {
+  const g = new THREE.Group();
+  hmiRoot.add(g);
+  g.position.set(bx, -0.09, 0.028);
+  g.quaternion.setFromUnitVectors(UP, V(0, 0, 1));
+  lathe([[0, 0], [0.010, 0], [0.012, 0.001], [0.012, 0.006], [0.007, 0.009], [0, 0.009]], bm, g);
+}
+
+// Mounting arm from front-left post to HMI enclosure
+function armJoint(p) {
+  const o = mesh(new THREE.SphereGeometry(0.030, 18, 12), M.zinc9006);
+  o.position.copy(p);
+  return o;
+}
+function armTube(a, b) {
+  const d = b.clone().sub(a);
+  const len = d.length();
+  const o = lathe([[0, 0], [0.022, 0], [0.023, 0.001], [0.023, len - 0.001], [0.022, len], [0, len]], M.aluBlasted);
+  o.position.copy(a);
+  o.quaternion.setFromUnitVectors(UP, d.normalize());
+  return o;
+}
+const hmiPivot = V(F.x0 - 0.02, 1.38, F.z1);
+const hmiElbow = V(F.x0 - 0.10, 1.38, F.z1 + 0.08);
+hmiRoot.updateMatrixWorld(true);
+const hmiBack = V(0, 0, -0.032).applyQuaternion(hmiRoot.quaternion).add(hmiRoot.position);
+armJoint(hmiPivot);
+armJoint(hmiElbow);
+armJoint(hmiBack);
+armTube(hmiPivot, hmiElbow);
+armTube(hmiElbow, hmiBack);
+
+// Safety sign on front-right bay
+const warnSign = labelPlane("COBOT ZONE · SCANNER ACTIVE", 0.40, 0.085, { bg: "#f2be00", fg: "#14161a", font: "700 28px system-ui, sans-serif", px: 128 });
+warnSign.position.set(0.675, 1.24, F.z1 + 0.006);
+world.add(warnSign);
+guardPanels.push(warnSign);
+
+brackets.instanceMatrix.needsUpdate = true;
+bracketsMir.instanceMatrix.needsUpdate = true;
+// Infeed conveyor (with escapement & pick-window sensors) and outfeed conveyor (Y-up, SPEC.md §2).
+const INF = CELL.infeed;
+const OUT = CELL.outfeed;
+const PW = CELL.pickWin;
+
+function convCylinder(r, length, material, parent = world) {
+  const b = Math.min(0.0005, length / 4, r / 4);
+  return lathe([
+    [0, -length / 2], [r - b, -length / 2], [r, -length / 2 + b],
+    [r, length / 2 - b], [r - b, length / 2], [0, length / 2],
+  ], material, parent);
+}
+
+function buildConveyor(cfg, opts = {}) {
+  const { x0, x1, z, top, width } = cfg;
+  const len = x1 - x0;
+  const cx = (x0 + x1) / 2;
+  const group = new THREE.Group();
+  world.add(group);
+
+  // Textured moving belt top surface + solid belt core
+  const beltTex = stripeTexture("#34433f", "#4b5e59", len / 0.14);
+  const beltMat = M.beltDark.clone();
+  beltMat.map = beltTex;
+  const beltTop = mesh(new THREE.PlaneGeometry(len, width), beltMat, group);
+  beltTop.rotation.x = -Math.PI / 2;
+  beltTop.position.set(cx, top, z);
+  beltTop.castShadow = false;
+  beltTop.receiveShadow = true;
+  rbox(len, 0.006, width - 0.004, 0.001, M.blackRubber, cx, top - 0.0035, z, group);
+
+  // Stainless side frames and POM side guide rails (guiding 80 mm housing centered at z)
+  const guideHalf = opts.guideHalf || 0.050;
+  for (const sg of [-1, 1]) {
+    rbox(len + 0.044, 0.068, 0.014, 0.002, M.stainlessBrushed, cx, top - 0.032, z + sg * (width / 2 + 0.009), group);
+    rbox(len - 0.04, 0.014, 0.006, 0.0015, M.stainlessBrushed, cx, top + 0.022, z + sg * (guideHalf + 0.006), group);
+    rbox(len - 0.04, 0.010, 0.005, 0.001, M.whitePOM, cx, top + 0.022, z + sg * guideHalf, group);
+    for (let px = x0 + 0.14; px <= x1 - 0.10; px += 0.42) {
+      rbox(0.010, 0.032, 0.036, 0.0015, M.stainlessBrushed, px, top + 0.008, z + sg * (guideHalf + 0.020), group);
+    }
+  }
+
+  // Head & tail rollers
+  for (const x of [x0, x1]) {
+    const roller = convCylinder(0.024, width + 0.014, M.steel, group);
+    roller.rotation.x = Math.PI / 2;
+    roller.position.set(x, top - 0.024, z);
+  }
+
+  // Support legs down to floor (y = 0) with rubber leveling feet
+  const legXs = opts.legXs || [x0 + 0.12, x1 - 0.12];
+  const legTopY = top - 0.066;
+  for (const lx of legXs) {
+    for (const sg of [-1, 1]) {
+      const lz = z + sg * (width / 2 + 0.009);
+      rbox(0.036, legTopY - 0.024, 0.036, 0.002, M.aluClear, lx, (legTopY + 0.024) / 2, lz, group);
+      convCylinder(0.024, 0.008, M.blackRubber, group).position.set(lx, 0.004, lz);
+      convCylinder(0.005, 0.018, M.steel, group).position.set(lx, 0.016, lz);
+    }
+    // Cross tie bar between pair of legs
+    rbox(0.028, 0.028, width + 0.016, 0.0015, M.aluClear, lx, 0.22, z, group);
+  }
+
+  // Geared drive motor mounted outside fence interference
+  const mx = opts.motorX ?? (x1 - 0.08);
+  const mzSign = opts.motorZSign ?? -1;
+  rbox(0.082, 0.082, 0.082, 0.004, M.gearboxSilver, mx, top - 0.044, z + mzSign * (width / 2 + 0.056), group);
+  const motor = convCylinder(0.038, 0.130, M.motorBlack, group);
+  motor.rotation.x = Math.PI / 2;
+  motor.position.set(mx, top - 0.044, z + mzSign * (width / 2 + 0.160));
+
+  return { group, beltTex };
+}
+
+// ---------------------------------------------------------------- infeed conveyor
+const infeedConv = buildConveyor(INF, {
+  legXs: [INF.x0 + 0.14, -1.16, -0.10],
+  motorX: INF.x0 + 0.16,
+  motorZSign: -1,
+});
+
+// Escapement mechanism near infeed entry (x = -1.55, outside fence x0 = -1.00)
+{
+  const ex = -1.55;
+  const g = infeedConv.group;
+  // Portal arch over the belt
+  for (const sg of [-1, 1]) {
+    rbox(0.024, 0.24, 0.024, 0.002, M.aluClear, ex, INF.top + 0.11, INF.z + sg * (INF.width / 2 + 0.009), g);
+  }
+  rbox(0.032, 0.032, INF.width + 0.042, 0.002, M.aluClear, ex, INF.top + 0.23, INF.z, g);
+  // Pneumatic cylinder + chrome rod + escapement stop gate
+  rbox(0.038, 0.090, 0.038, 0.003, M.aluMachined, ex, INF.top + 0.21, INF.z, g);
+  convCylinder(0.007, 0.075, M.chrome, g).position.set(ex, INF.top + 0.13, INF.z);
+  rbox(0.012, 0.048, 0.090, 0.0015, M.curtainYellow, ex, INF.top + 0.072, INF.z, g);
+  // Entry optical sensor
+  rbox(0.016, 0.022, 0.018, 0.002, M.blackPlastic, ex - 0.06, INF.top + 0.032, INF.z + 0.065, g);
+  convCylinder(0.004, 0.004, M.lens, g).position.set(ex - 0.06, INF.top + 0.032, INF.z + 0.056);
+}
+
+// Pick-window markings & line-tracking photo-eyes (CELL.pickWin = { x0: -0.45, x1: -0.05 })
+{
+  const g = infeedConv.group;
+  const pwLen = PW.x1 - PW.x0;
+  const pwCx = (PW.x0 + PW.x1) / 2;
+  for (const sg of [-1, 1]) {
+    rbox(pwLen, 0.006, 0.012, 0.001, M.curtainYellow, pwCx, INF.top + 0.004, INF.z + sg * (INF.width / 2 + 0.009), g);
+  }
+  for (const sx of [PW.x0, PW.x1]) {
+    rbox(0.014, 0.052, 0.014, 0.002, M.stainlessBrushed, sx, INF.top + 0.012, INF.z + 0.078, g);
+    rbox(0.016, 0.022, 0.020, 0.002, M.blackPlastic, sx, INF.top + 0.034, INF.z + 0.068, g);
+  }
+  const beamPts = new Float32Array([PW.x0, INF.top + 0.034, INF.z - 0.055, PW.x0, INF.top + 0.034, INF.z + 0.055]);
+  const beamGeo = new THREE.BufferGeometry();
+  beamGeo.setAttribute("position", new THREE.BufferAttribute(beamPts, 3));
+  g.add(new THREE.Line(beamGeo, new THREE.LineBasicMaterial({ color: 0xff3b30, transparent: true, opacity: 0.55 })));
+}
+
+// ---------------------------------------------------------------- outfeed conveyor
+const outfeedConv = buildConveyor(OUT, {
+  legXs: [OUT.x0 + 0.12, 0.85, OUT.x1 - 0.14],
+  motorX: OUT.x1 - 0.14,
+  motorZSign: -1,
+});
+
+// End-of-line discharge sensor & bumper stop
+{
+  const g = outfeedConv.group;
+  rbox(0.014, 0.034, 0.100, 0.002, M.blackRubber, OUT.x1 - 0.012, OUT.top + 0.018, OUT.z, g);
+  rbox(0.016, 0.024, 0.020, 0.002, M.blackPlastic, OUT.x1 - 0.08, OUT.top + 0.032, OUT.z + 0.066, g);
+}
+// FANUC pedestal, UR table, fixture table & pneumatic clamp, reject bin,
+// 2 x (2x3) cover trays, overhead inspection camera, and reusable housing/cover/screw geometries (Y-up, SPEC.md §2).
+
+// ---------------------------------------------------------------- FANUC pedestal (CELL.fanuc.base = [0, 0.60, -0.05])
+{
+  const [fx, fy, fz] = CELL.fanuc.base;
+  const g = new THREE.Group();
+  world.add(g);
+  // Floor baseplate & anchor bolts
+  rbox(0.40, 0.020, 0.40, 0.003, M.pedestalSteel, fx, 0.010, fz, g);
+  for (const sx of [-0.16, 0.16]) for (const sz of [-0.16, 0.16]) {
+    addBolt(V(fx + sx, 0.020, fz + sz), UP, g);
+  }
+  // Column body + diagonal gussets
+  const colH = fy - 0.040;
+  rbox(0.24, colH, 0.24, 0.006, M.pedestalSteel, fx, 0.020 + colH / 2, fz, g);
+  for (const [gx, gz] of [[0.14, 0], [-0.14, 0], [0, 0.14], [0, -0.14]]) {
+    rbox(gx ? 0.04 : 0.014, 0.14, gz ? 0.04 : 0.014, 0.002, M.cabinet, fx + gx, 0.09, fz + gz, g);
+  }
+  // Machined steel top mounting plate (top plane exact at y = fy = 0.60)
+  rbox(0.30, 0.022, 0.30, 0.003, M.aluMachined, fx, fy - 0.011, fz, g);
+  for (let i = 0; i < 4; i++) {
+    const a = i * Math.PI / 2 + Math.PI / 4;
+    addBolt(V(fx + Math.cos(a) * 0.115, fy, fz + Math.sin(a) * 0.115), UP, g);
+  }
+}
+
+// ---------------------------------------------------------------- Fixture table & pneumatic clamp (CELL.fixture.pos = [0, 0.80, 0.25])
+{
+  const [px, py, pz] = CELL.fixture.pos;
+  const g = new THREE.Group();
+  world.add(g);
+  // Compact fixture support stand inside the fence (z = 0.09..0.29)
+  const tblZ = 0.19, tblD = 0.20, tblW = 0.36;
+  rbox(tblW, 0.022, tblD, 0.003, M.aluMachined, px, py - 0.011, tblZ, g);
+  for (const sx of [-0.14, 0.14]) for (const sz of [0.11, 0.27]) {
+    rbox(0.036, py - 0.034, 0.036, 0.002, M.aluClear, px + sx, (py - 0.010) / 2, sz, g);
+    vcyl(0.024, 0.008, M.blackRubber, px + sx, 0.004, sz, 20, g);
+  }
+  rbox(0.26, 0.026, 0.026, 0.0015, M.aluClear, px, 0.22, tblZ, g);
+
+  // Precision datum fixture nest centered at CELL.fixture.pos (housing bottom sits at y = 0.800)
+  // Flanking locating rails & datum pads around 120 x 80 mm housing footprint
+  const hw = CELL.housing[0] / 2, hd = CELL.housing[2] / 2;
+  for (const sx of [-1, 1]) {
+    rbox(0.016, 0.018, 0.096, 0.002, M.fixtureBlue, px + sx * (hw + 0.010), py + 0.009, pz, g);
+    // Steel locating datum pin
+    vcyl(0.005, 0.022, M.steel, px + sx * (hw + 0.004), py + 0.011, pz - 0.025, 16, g);
+  }
+  // Back stop block (-z side)
+  rbox(0.110, 0.018, 0.016, 0.002, M.fixtureBlue, px, py + 0.009, pz - hd - 0.010, g);
+  // Pneumatic side-clamp cylinder (-z side)
+  rbox(0.042, 0.034, 0.056, 0.003, M.aluMachined, px, py + 0.017, pz - hd - 0.052, g);
+  hcylZ(0.006, 0.024, M.chrome, px, py + 0.020, pz - hd - 0.018, 16, g);
+  rbox(0.032, 0.014, 0.010, 0.002, M.blackPlastic, px, py + 0.022, pz - hd - 0.006, g);
+}
+
+// ---------------------------------------------------------------- UR5e collaborative table (top y = 0.80, z = 0.36..1.42)
+{
+  const tx0 = -0.45, tx1 = 0.85, tz0 = 0.36, tz1 = 1.42;
+  const tw = tx1 - tx0, td = tz1 - tz0;
+  const tcx = (tx0 + tx1) / 2, tcz = (tz0 + tz1) / 2;
+  const topY = CELL.ur.base[1];
+  const g = new THREE.Group();
+  world.add(g);
+
+  // Top plate (y = 0.768..0.800)
+  rbox(tw, 0.032, td, 0.004, M.aluMachined, tcx, topY - 0.016, tcz, g);
+
+  // 40x40 extrusion frame & 4 legs down to rubber feet
+  const inset = 0.045;
+  const lx0 = tx0 + inset, lx1 = tx1 - inset, lz0 = tz0 + inset, lz1 = tz1 - inset;
+  for (const lx of [lx0, lx1]) for (const lz of [lz0, lz1]) {
+    profileBeam(V(lx, 0.016, lz), V(lx, topY - 0.032, lz));
+    vcyl(0.028, 0.008, M.blackRubber, lx, 0.004, lz, 24, g);
+    vcyl(0.006, 0.016, M.steel, lx, 0.014, lz, 16, g);
+  }
+  for (const lz of [lz0, lz1]) {
+    profileBeam(V(lx0 + 0.02, 0.22, lz), V(lx1 - 0.02, 0.22, lz));
+    profileBeam(V(lx0 + 0.02, topY - 0.052, lz), V(lx1 - 0.02, topY - 0.052, lz));
+  }
+  for (const lx of [lx0, lx1]) {
+    profileBeam(V(lx, 0.22, lz0 + 0.02), V(lx, 0.22, lz1 - 0.02));
+    profileBeam(V(lx, topY - 0.052, lz0 + 0.02), V(lx, topY - 0.052, lz1 - 0.02));
+  }
+
+  // UR5e base mounting ring & bolts at CELL.ur.base
+  const [ux, uy, uz] = CELL.ur.base;
+  vcyl(0.088, 0.012, M.steel, ux, uy + 0.002, uz, 36, g);
+  for (let i = 0; i < 6; i++) {
+    const a = i * Math.PI / 3;
+    addBolt(V(ux + Math.cos(a) * 0.072, uy + 0.008, uz + Math.sin(a) * 0.072), UP, g);
+  }
+
+  // Operator-side E-stop box mounted on front-right corner of the UR table
+  rbox(0.080, 0.065, 0.080, 0.004, M.estopYellow, tx1 - 0.06, topY + 0.032, tz1 - 0.06, g);
+  vcyl(0.022, 0.016, M.estopRed, tx1 - 0.06, topY + 0.070, tz1 - 0.06, 24, g);
+}
+
+// ---------------------------------------------------------------- Reject bin (CELL.rejectBin)
+{
+  const RB = CELL.rejectBin;
+  const [rx, ry, rz] = RB.pos;
+  const [rw, rh, rd] = RB.size;
+  const g = new THREE.Group();
+  world.add(g);
+  const yBot = ry - rh;
+  const wallT = 0.008;
+
+  // Bottom plate & 4 bin walls (open top at y = ry)
+  rbox(rw, wallT, rd, 0.002, M.binRed, rx, yBot + wallT / 2, rz, g);
+  rbox(wallT, rh, rd, 0.002, M.binRed, rx - rw / 2 + wallT / 2, ry - rh / 2, rz, g);
+  rbox(wallT, rh, rd, 0.002, M.binRed, rx + rw / 2 - wallT / 2, ry - rh / 2, rz, g);
+  rbox(rw - wallT * 2, rh, wallT, 0.002, M.binRed, rx, ry - rh / 2, rz - rd / 2 + wallT / 2, g);
+  rbox(rw - wallT * 2, rh, wallT, 0.002, M.binRed, rx, ry - rh / 2, rz + rd / 2 - wallT / 2, g);
+  // Flared stainless upper collar
+  for (const sg of [-1, 1]) {
+    const lipX = rbox(0.018, 0.012, rd + 0.012, 0.002, M.stainlessBrushed, rx + sg * (rw / 2 + 0.004), ry - 0.004, rz, g);
+    lipX.rotation.z = -sg * 0.25;
+  }
+  // Support legs down to y = 0
+  for (const sx of [-rw / 2 + 0.025, rw / 2 - 0.025]) for (const sz of [-rd / 2 + 0.025, rd / 2 - 0.025]) {
+    rbox(0.026, yBot - 0.008, 0.026, 0.0015, M.aluDark, rx + sx, (yBot + 0.008) / 2, rz + sz, g);
+    vcyl(0.018, 0.008, M.blackRubber, rx + sx, 0.004, rz + sz, 16, g);
+  }
+  // Reject label on +z front wall
+  const tag = labelPlane("REJECT", 0.16, 0.044, { bg: "#1a1c20", fg: "#ffffff", font: "700 84px system-ui, sans-serif" });
+  tag.position.set(rx, ry - rh * 0.45, rz + rd / 2 + 0.002);
+  g.add(tag);
+}
+
+// ---------------------------------------------------------------- Reusable housing, cover & screw geometries
+const [HW, HH, HD] = CELL.housing; // [0.12, 0.06, 0.08]
+const COVER_W = 0.086, COVER_H = 0.010, COVER_D = 0.070;
+
+const _tmpGeoGroup = new THREE.Group();
+// Housing body (bottom-centered at y = 0..HH)
+const housingBodyGeo = rbox(HW, HH, HD, 0.004, M.housingAlu, 0, HH / 2, 0, _tmpGeoGroup).geometry;
+housingBodyGeo.translate(0, HH / 2, 0);
+const housingFlangeGeo = rbox(HW + 0.003, 0.010, HD - 0.014, 0.002, M.aluBlasted, 0, 0.005, 0, _tmpGeoGroup).geometry;
+housingFlangeGeo.translate(0, 0.005, 0);
+const housingBossGeo = new THREE.CylinderGeometry(0.022, 0.024, 0.006, 28);
+housingBossGeo.translate(0, HH - 0.003, 0); // top flush with the housing; the cover occupies y > HH
+const housingBoreGeo = new THREE.CylinderGeometry(0.014, 0.014, 0.008, 24);
+housingBoreGeo.translate(0, HH - 0.004, 0);
+
+const SCREW_OFFSETS = [
+  [-0.032, -0.024],
+  [0.032, -0.024],
+  [-0.032, 0.024],
+  [0.032, 0.024],
+];
+
+// Cover (bottom-centered at y = 0..COVER_H, with 4 real counterbored screw holes)
+const COVER_HOLE_R = 0.0052;
+const COVER_PLATE_H = 0.0085;
+const coverPlateGeo = (() => {
+  const hw = COVER_W / 2, hd = COVER_D / 2, r = 0.0035;
+  const shape = new THREE.Shape();
+  shape.moveTo(-hw + r, -hd);
+  shape.lineTo(hw - r, -hd);
+  shape.absarc(hw - r, -hd + r, r, -Math.PI / 2, 0, false);
+  shape.lineTo(hw, hd - r);
+  shape.absarc(hw - r, hd - r, r, 0, Math.PI / 2, false);
+  shape.lineTo(-hw + r, hd);
+  shape.absarc(-hw + r, hd - r, r, Math.PI / 2, Math.PI, false);
+  shape.lineTo(-hw, -hd + r);
+  shape.absarc(-hw + r, -hd + r, r, Math.PI, Math.PI * 1.5, false);
+  shape.closePath();
+  for (const [sx, sz] of SCREW_OFFSETS) {
+    const hole = new THREE.Path();
+    hole.absarc(sx, sz, COVER_HOLE_R, 0, Math.PI * 2, true);
+    shape.holes.push(hole);
+  }
+  const bevel = 0.0005;
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth: COVER_PLATE_H - 2 * bevel,
+    bevelEnabled: true,
+    bevelThickness: bevel,
+    bevelSize: bevel,
+    bevelSegments: 2,
+    curveSegments: 20,
+  });
+  geo.translate(0, 0, bevel);
+  geo.rotateX(Math.PI / 2);
+  geo.translate(0, COVER_PLATE_H, 0);
+  return geo;
+})();
+const coverCapGeo = new THREE.CylinderGeometry(0.020, 0.022, 0.005, 24);
+coverCapGeo.translate(0, COVER_H - 0.0025, 0);
+
+// Screw (M5 socket cap, bottom-centered y = 0..0.006, top at COVER_H TCP plane)
+const screwGeo = new THREE.LatheGeometry([
+  [0, 0], [0.0042, 0], [0.0042, 0.0053], [0.0035, 0.0060],
+  [0.0020, 0.0060], [0.0020, 0.0043], [0, 0.0043],
+].map(([r, y]) => new THREE.Vector2(r, y)), 18);
+const screwSocketGeo = new THREE.CylinderGeometry(0.0020, 0.0020, 0.0008, 6);
+screwSocketGeo.translate(0, 0.0046, 0);
+_tmpGeoGroup.clear();
+
+function makeHousingMesh(parent = world) {
+  const g = new THREE.Group();
+  mesh(housingBodyGeo, M.housingAlu, g);
+  mesh(housingFlangeGeo, M.aluBlasted, g);
+  mesh(housingBossGeo, M.aluMachined, g);
+  mesh(housingBoreGeo, M.blackPlastic, g);
+  for (const [sx, sz] of SCREW_OFFSETS) {
+    const hole = vcyl(0.0035, 0.002, M.blackPlastic, sx, HH - 0.0012, sz, 12, g);
+    hole.castShadow = false;
+  }
+  parent.add(g);
+  return g;
+}
+
+function makeCoverMesh(parent = world) {
+  const g = new THREE.Group();
+  mesh(coverPlateGeo, M.coverSlate, g);
+  mesh(coverCapGeo, M.aluDark, g);
+  // Recessed dark hole bottom seats strictly below mounted screws (y = 0..0.0036 < 0.0040)
+  for (const [sx, sz] of SCREW_OFFSETS) {
+    const seat = vcyl(COVER_HOLE_R, 0.0036, M.blackPlastic, sx, 0.0018, sz, 16, g);
+    seat.castShadow = false;
+  }
+  parent.add(g);
+  return g;
+}
+
+function makeScrewMesh(parent = world) {
+  const g = new THREE.Group();
+  mesh(screwGeo, M.steel, g);
+  const socket = mesh(screwSocketGeo, M.blackPlastic, g);
+  socket.castShadow = false;
+  parent.add(g);
+  return g;
+}
+
+// ---------------------------------------------------------------- Cover trays (2 x 3 grid, pitch 0.10)
+const TRAY_PITCH = 0.10;
+const TRAY_COLS = 3; // along X (-0.10, 0, +0.10)
+const TRAY_ROWS = 2; // along Z (-0.05, +0.05)
+
+function traySlotLocal(idx) {
+  const col = idx % TRAY_COLS;
+  const row = Math.floor(idx / TRAY_COLS);
+  return [(col - 1) * TRAY_PITCH, (row - 0.5) * TRAY_PITCH];
+}
+
+function makeTrayGroup(ti) {
+  const g = new THREE.Group();
+  world.add(g);
+  const tw = 0.310, td = 0.210, th = 0.014;
+  // Base tray body with recessed pockets
+  rbox(tw, th, td, 0.003, M.trayPOM, 0, th / 2, 0, g);
+  // Pocket locator bosses & initial covers
+  const covers = [];
+  for (let i = 0; i < TRAY_COLS * TRAY_ROWS; i++) {
+    const [lx, lz] = traySlotLocal(i);
+    rbox(COVER_W + 0.004, 0.004, COVER_D + 0.004, 0.001, M.aluDark, lx, th + 0.001, lz, g);
+    const cv = makeCoverMesh(g);
+    cv.position.set(lx, th + 0.003, lz);
+    covers.push(cv);
+  }
+  const label = labelPlane(`TRAY ${ti + 1}`, 0.11, 0.026, { bg: "#1b2028", fg: "#e2e8f0", font: "700 72px system-ui, sans-serif", px: 128 });
+  label.position.set(0, 0.015, td / 2 + 0.002);
+  g.add(label);
+  return { g, covers };
+}
+
+const trayGroups = [];
+const trayCoverMeshes = [];
+const spareTrayGroups = [];
+CELL.trays.forEach((tr, ti) => {
+  const [tx, ty, tz] = tr.pos;
+  const tw = 0.310, td = 0.210;
+  // Corner alignment rails fixed to the UR table
+  const rails = new THREE.Group();
+  rails.position.set(tx, ty, tz);
+  world.add(rails);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    rbox(0.022, 0.018, 0.010, 0.001, M.aluClear, sx * (tw / 2 - 0.012), 0.009, sz * (td / 2 + 0.006), rails);
+    rbox(0.010, 0.018, 0.022, 0.001, M.aluClear, sx * (tw / 2 + 0.006), 0.009, sz * (td / 2 - 0.012), rails);
+  }
+
+  const active = makeTrayGroup(ti);
+  active.g.position.set(tx, ty, tz);
+  trayGroups.push(active.g);
+  trayCoverMeshes.push(active.covers);
+
+  const spare = makeTrayGroup(ti);
+  spare.g.visible = false;
+  spareTrayGroups.push(spare.g);
+});
+
+// ---------------------------------------------------------------- Inspection camera (CELL.camera = [0, 1.45, 0.25])
+const camFlash = new THREE.PointLight(0xeef6ff, 0, 0.9);
+const camRingMat = M.whitePOM.clone();
+camRingMat.emissive.setHex(0x000000);
+{
+  const [cx, cy, cz] = CELL.camera;
+  const g = new THREE.Group();
+  world.add(g);
+  // Cantilever extrusion bracket from front fence header (y = 1.65, z = 0.30) to camera position
+  profileBeam(V(cx, 1.65, CELL.fence.z1), V(cx, 1.65, cz));
+  rbox(0.048, 0.16, 0.048, 0.002, M.aluDark, cx, 1.56, cz, g);
+  // Machine vision camera housing + C-mount lens at y = 1.45 pointing straight down (-Y)
+  rbox(0.056, 0.072, 0.056, 0.004, M.aluDark, cx, cy + 0.068, cz, g);
+  vcyl(0.020, 0.034, M.lens, cx, cy + 0.017, cz, 24, g);
+  vcyl(0.018, 0.004, M.glass, cx, cy + 0.001, cz, 24, g);
+  // Ring illuminator around lens
+  const ringBody = vcyl(0.044, 0.014, M.aluDark, cx, cy + 0.016, cz, 32, g);
+  ringBody.castShadow = true;
+  const ringGlow = mesh(new THREE.TorusGeometry(0.032, 0.005, 12, 36), camRingMat, g);
+  ringGlow.rotation.x = Math.PI / 2;
+  ringGlow.position.set(cx, cy + 0.008, cz);
+  camFlash.position.set(cx, cy - 0.04, cz);
+  world.add(camFlash);
+}
+const HALF_PI = Math.PI / 2;
+
+function mixVec(a, b, s) {
+  return a.map((x, j) => x + s * (b[j] - x));
+}
+
+function robotFrame(parent, name, x = 0, y = 0, z = 0) {
+  const frame = new THREE.Group();
+  frame.name = name;
+  frame.position.set(x, y, z);
+  parent.add(frame);
+  return frame;
+}
+
+function robotBase(actor) {
+  const base = robotFrame(world, actor, ...CELL[actor].base);
+  base.rotation.set(-HALF_PI, 0, 0);
+  base.rotateOnWorldAxis(UP, CELL[actor].yaw);
+  return base;
+}
+
+function robotSample(t) {
+  const { S } = current();
+  const index = clamp(t / S.dt, 0, S.t.length - 1);
+  const nearest = Math.round(index);
+  if (Math.abs(index - nearest) < 1e-9) return [nearest, nearest, 0];
+  const lo = Math.floor(index);
+  return [lo, lo + 1, index - lo];
+}
+
+const fanucScene = (() => {
+  const { d1, a1, a2, a3, d4, d6 } = FANUC.dh;
+  const yellow = M.fanucYellow, dark = M.blackPlastic;
+  const base = robotBase("fanuc");
+  hcylZ(0.108, 0.025, yellow, 0, 0, 0.013, 40, base);
+  hcylZ(0.089, 0.056, M.aluDark, 0, 0, 0.049, 40, base);
+  for (const x of [-0.064, 0.064]) for (const y of [-0.064, 0.064]) {
+    addBolt(V(x, y, 0.026), V(0, 0, 1), base);
+  }
+
+  const j1 = robotFrame(base, "FANUC J1", 0, 0, d1);
+  rbox(0.165, 0.155, d1 - 0.055, 0.040, yellow, -0.014, 0, -(d1 - 0.055) / 2, j1);
+  const j2 = robotFrame(j1, "FANUC J2", a1);
+  vcyl(0.080, 0.174, yellow, 0, 0, 0, 40, j2);
+  vcyl(0.055, 0.012, M.aluDark, 0, -0.091, 0, 36, j2);
+  extrudeXZ([[-0.066, 0], [0.067, 0], [0.055, 0.15], [0.041, a2],
+    [-0.056, a2], [-0.086, 0.17]], -0.057, 0.057, yellow, j2, 0.013);
+  const logo = labelPlane("FANUC", 0.103, 0.027, { bg: "#f5b800", fg: "#231d14" });
+  logo.position.set(-0.012, -0.058, 0.22);
+  logo.rotation.set(HALF_PI, 0, HALF_PI);
+  j2.add(logo);
+
+  const j3 = robotFrame(j2, "FANUC J3", 0, 0, a2);
+  vcyl(0.067, 0.132, yellow, 0, 0, 0, 40, j3);
+  vcyl(0.039, 0.012, M.aluDark, 0, -0.069, 0, 32, j3);
+  extrudeXZ([[0, -0.055], [0.17, -0.037], [d4, a3 - 0.036],
+    [d4, a3 + 0.041], [0.14, 0.071], [0, 0.059]], -0.048, 0.048, yellow, j3, 0.010);
+  const wrist = robotFrame(j3, "FANUC wrist datum", d4, 0, a3);
+  wrist.rotation.y = HALF_PI;
+  const j4 = robotFrame(wrist, "FANUC J4");
+  hcylZ(0.053, 0.054, yellow, 0, 0, -0.013, 36, j4);
+  const j5 = robotFrame(j4, "FANUC J5");
+  vcyl(0.043, 0.106, yellow, 0, 0, 0.007, 32, j5);
+  vcyl(0.028, 0.008, M.aluDark, 0, 0.055, 0.007, 32, j5);
+  rbox(0.073, 0.072, 0.070, 0.021, yellow, 0, 0, 0.039, j5);
+  const j6 = robotFrame(j5, "FANUC J6");
+  hcylZ(0.035, 0.014, M.aluDark, 0, 0, d6 - 0.007, 36, j6);
+  const flange = robotFrame(j6, "FANUC flange", 0, 0, d6);
+  const tcp = robotFrame(flange, "FANUC nominal TCP", 0, 0, FANUC.tool);
+
+  // Dual gripper with +X lateral offset (clears UR table and light curtain) and
+  // pneumatic Z-extension during swivel (keeps inactive side beside the wrist at 0/pi
+  // and clears J5/J6 at mid-swivel). Cylinder is offset in +Y and behind the flange
+  // plane so neither barrel, rod, nor bracket enters the swept housing/gripper volume.
+  const lateral = 0.095, advance = 0.070, swivelStroke = 0.105, cylY = 0.092;
+  const support = robotFrame(flange, "FANUC swivel support");
+  hcylZ(0.035, 0.012, M.aluDark, 0, 0, -0.006, 32, support);
+  rbox(lateral + 0.026, 0.034, 0.014, 0.004, M.aluDark, lateral / 2, 0, -0.017, support);
+  rbox(0.034, cylY + 0.026, 0.014, 0.004, M.aluDark, lateral, cylY / 2, -0.017, support);
+  hcylZ(0.018, 0.115, M.aluMachined, lateral, cylY, -0.0225, 32, support);
+  const piston = robotFrame(support, "FANUC swivel piston", lateral, 0, advance);
+  hcylZ(0.009, 0.145, M.chrome, 0, cylY, -0.0725, 24, piston);
+  hcylZ(0.016, 0.020, M.aluDark, 0, cylY, 0, 24, piston);
+  rbox(0.026, cylY - 0.010, 0.018, 0.004, M.aluDark, 0, (cylY + 0.022) / 2, 0, piston);
+
+  const swivel = robotFrame(support, "FANUC pneumatic swivel", lateral, 0, advance);
+  vcyl(0.022, 0.052, M.aluDark, 0, 0, 0, 32, swivel);
+  const grips = [0, 1].map(g => {
+    const side = robotFrame(swivel, "FANUC tool side " + g);
+    side.rotation.y = g * Math.PI;
+    const tipZ = FANUC.tool - advance;
+    const mount = robotFrame(side, "FANUC gripper " + g, -lateral, 0, tipZ);
+    rbox(lateral, 0.030, 0.018, 0.004, M.aluDark, -lateral / 2, 0, -0.012, side);
+    rbox(0.026, 0.034, Math.abs(tipZ - (-0.012)) + 0.016, 0.004, M.aluDark, -lateral, 0, (tipZ - 0.012) / 2, side);
+    rbox(0.072, 0.102, 0.028, 0.007, M.aluMachined, 0, 0, -0.044, mount);
+    const fingers = [-1, 1].map(sign => {
+      const finger = robotFrame(mount, "Parallel jaw");
+      rbox(0.032, 0.015, 0.046, 0.003, M.steel, 0, 0, -0.016, finger);
+      rbox(0.030, 0.005, 0.022, 0.001, dark, 0, -sign * 0.009, -0.002, finger);
+      return finger;
+    });
+    const marker = robotFrame(mount, "FANUC grip point " + g);
+    return { marker, fingers };
+  });
+  return { flange, tcp, swivel, piston, advance, swivelStroke, grips, joints: [j1, j2, j3, j4, j5, j6] };
+})();
+window.__robotMarkers = { fanuc: { flange: fanucScene.flange, tcp: fanucScene.tcp } };
+
+function poseFanuc(t) {
+  const { S, segs } = current();
+  const [lo, hi, mix] = robotSample(t);
+  const q = mixVec(S.fq[lo], S.fq[hi], mix);
+  fanucScene.joints.forEach((joint, i) => { joint.rotation[i === 1 || i === 2 || i === 4 ? "y" : "z"] = q[i]; });
+  const swAngle = lerp(S.fSwivel[lo], S.fSwivel[hi], mix);
+  const swZ = fanucScene.advance + fanucScene.swivelStroke * Math.sin(swAngle);
+  fanucScene.swivel.rotation.y = swAngle;
+  fanucScene.swivel.position.z = swZ;
+  fanucScene.piston.position.z = swZ;
+  const segment = segs.fanuc.find(s => t >= s.t0 && t < s.t1);
+  fanucScene.grips.forEach(({ fingers }, g) => {
+    const active = S.fGrip[lo] === g;
+    const closing = active && segment?.kind === "pick" ? clamp((t - segment.t0) / (segment.t1 - segment.t0), 0, 1) : 0;
+    const gap = S.fHeld[lo][g] !== null ? 0.052 : lerp(0.063, 0.052, closing);
+    fingers.forEach((finger, i) => { finger.position.y = (2 * i - 1) * gap; });
+  });
+}
+const urScene = (() => {
+  const { d1, a2, a3, d4, d5, d6 } = UR.dh;
+  const silver = M.aluBlasted, white = M.whitePOM;
+  const base = robotBase("ur");
+  hcylZ(0.076, 0.016, M.aluDark, 0, 0, 0.008, 36, base);
+  hcylZ(0.065, 0.081, silver, 0, 0, 0.053, 36, base);
+  const joints = [];
+  let frame = base;
+  const rows = [[0, d1, HALF_PI], [a2, 0, 0], [a3, 0, 0],
+    [0, d4, HALF_PI], [0, d5, -HALF_PI], [0, d6, 0]];
+  rows.forEach(([a, d, alpha], i) => {
+    const joint = robotFrame(frame, "UR5e J" + (i + 1));
+    joints.push(joint);
+    frame = robotFrame(joint, "UR5e link " + (i + 1), a, 0, d);
+    frame.rotation.x = alpha;
+    const radius = [0.067, 0.063, 0.054, 0.043, 0.042, 0.039][i];
+    const center = i < 3 ? Math.max(0, d - 0.045) : d * 0.35;
+    hcylZ(radius, i < 3 ? 0.096 : 0.072, white, 0, 0, center, 36, joint);
+    hcylZ(radius * 0.84, 0.012, M.urBlue, 0, 0, center + (i === 0 ? -0.050 : -0.037), 36, joint);
+    if (a) {
+      hcylX(radius * 0.69, -a, silver, a / 2, 0, 0.019, 36, joint);
+      for (const x of [-0.055, a + 0.052]) {
+        hcylX(radius * 0.76, 0.055, white, x, 0, 0.019, 36, joint);
+      }
+    } else {
+      hcylZ(radius * 0.71, d * 0.67, silver, 0, 0, d * 0.65, 36, joint);
+    }
+  });
+  const flange = frame;
+  flange.name = "UR5e flange";
+  const tcp = robotFrame(flange, "UR5e TCP", 0, 0, UR.tool);
+  hcylZ(0.032, 0.012, M.aluDark, 0, 0, 0.006, 32, flange);
+  rbox(0.105, 0.063, 0.052, 0.008, M.aluMachined, 0, 0, 0.035, flange);
+  hcylZ(0.018, 0.072, M.aluDark, 0, 0, 0.087, 32, flange);
+  hcylZ(0.009, 0.026, M.steel, 0, 0, 0.131, 24, flange);
+  hcylZ(0.0038, 0.010, M.steel, 0, 0, UR.tool - 0.005, 16, flange);
+  rbox(0.027, 0.041, 0.070, 0.006, M.aluDark, 0.058, 0, 0.061, flange);
+  tubeAlong([V(0.056, 0, 0.030), V(0.075, 0.034, 0.048), V(0.059, 0.038, 0.116),
+    V(0.022, 0.018, 0.128), V(0.009, 0.006, 0.136)], 0.005, M.urBlue, flange, 24, 10);
+  const fingers = [-1, 1].map(sign => {
+    const finger = robotFrame(flange, "UR5e cover jaw");
+    rbox(0.010, 0.024, 0.077, 0.003, M.steel, 0, 0, 0.097, finger);
+    rbox(0.009, 0.024, 0.022, 0.002, M.blackPlastic, -sign * 0.004, 0, 0.147, finger);
+    return finger;
+  });
+  return { flange, tcp, joints, fingers };
+})();
+window.__robotMarkers.ur = { flange: urScene.flange, tcp: urScene.tcp };
+
+function poseUr(t) {
+  const { S } = current();
+  const [lo, hi, mix] = robotSample(t);
+  mixVec(S.uq[lo], S.uq[hi], mix).forEach((q, i) => { urScene.joints[i].rotation.z = q; });
+  const carrying = partSchedule().some(({ acquire, cover }) => t >= acquire && t < cover);
+  urScene.fingers.forEach((finger, i) => { finger.position.x = (2 * i - 1) * (carrying ? 0.0515 : 0.067); });
+}
+const housingHalf = CELL.housing[1] / 2;
+const screwHeadHeight = 0.006;
+const partMeshes = Array.from({ length: N_PARTS }, (_, k) => {
+  const center = robotFrame(world, "Housing center " + k);
+  makeHousingMesh(center).position.y = -housingHalf;
+  const cover = makeCoverMesh(center);
+  cover.position.y = housingHalf;
+  cover.name = "Cover " + k;
+  const screws = SCREW_OFFSETS.map(([x, z], i) => {
+    const screw = makeScrewMesh(center);
+    screw.position.set(x, housingHalf + COVER_H - screwHeadHeight, z);
+    screw.name = "Screw " + k + ":" + i;
+    return screw;
+  });
+  return { center, cover, screws };
+});
+const urCover = makeCoverMesh();
+urCover.name = "UR carried cover";
+const urScrew = makeScrewMesh();
+urScrew.name = "UR carried screw";
+
+const partTimelineCache = new WeakMap();
+function partSchedule() {
+  const model = current();
+  if (partTimelineCache.has(model)) return partTimelineCache.get(model);
+  const timeline = model.parts.map(({ k }) => {
+    const fanuc = model.segs.fanuc.filter(s => s.k === k);
+    const ur = model.segs.ur.filter(s => s.k === k);
+    const screws = ur.filter(s => s.kind === "screw").map(s => ({
+      ...s, approach: model.segs.ur[model.segs.ur.indexOf(s) - 1].t0,
+    }));
+    return {
+      load: fanuc.find(s => s.kind === "load").t1,
+      release: fanuc.find(s => s.kind === "place_bin" || s.kind === "place_out").t1,
+      acquire: ur.find(s => s.kind === "move").t1,
+      cover: ur.find(s => s.kind === "cover").t1,
+      screws,
+    };
+  });
+  partTimelineCache.set(model, timeline);
+  return timeline;
+}
+
+// Approach poses use lcDown: tool +Z is world -Y. Part +Y is up, so it maps onto -tool Z.
+const rotationFromTool = new THREE.Quaternion().setFromAxisAngle(V(1, 0, 0), -HALF_PI);
+function placeOnTool(object, marker, bottomOffset) {
+  marker.getWorldPosition(object.position);
+  marker.getWorldQuaternion(object.quaternion).multiply(rotationFromTool);
+  object.position.add(V(0, -bottomOffset, 0).applyQuaternion(object.quaternion));
+}
+
+function poseTrays(t, timeline) {
+  const { trays, segs } = current();
+  const [aisleX, aisleZ] = CELL.operator.aisle;
+  const [, stationZ] = CELL.operator.station;
+  const carryZ = stationZ - 0.18;
+  const aisleCarryZ = aisleZ - 0.20;
+  const carryY = 0.96;
+
+  trayGroups.forEach((emptyGroup, tray) => {
+    const spareGroup = spareTrayGroups[tray];
+    const [x, y, z] = CELL.trays[tray].pos;
+    const swap = trays.swaps.find(s => s.tray === tray);
+    trayCoverMeshes[tray].forEach((cover, slot) => {
+      cover.visible = t < timeline[tray * 6 + slot].acquire;
+    });
+    if (!swap) {
+      emptyGroup.visible = true;
+      emptyGroup.position.set(x, y, z);
+      spareGroup.visible = false;
+      return;
+    }
+    const opSegs = segs.operator;
+    const swapIdx = opSegs.findIndex(s => s.kind === "swap" && s.t0 <= swap.t0 + 1e-6 && s.t1 >= swap.t1 - 1e-6);
+    const walkIn = swapIdx > 0 && opSegs[swapIdx - 1].kind === "walk_in" ? opSegs[swapIdx - 1] : null;
+    const walkOut = swapIdx >= 0 && opSegs[swapIdx + 1]?.kind === "walk_out" ? opSegs[swapIdx + 1] : null;
+
+    if (t < swap.t0) {
+      emptyGroup.visible = true;
+      emptyGroup.position.set(x, y, z);
+      if (walkIn && t >= walkIn.t0) {
+        const p = clamp((t - walkIn.t0) / (walkIn.t1 - walkIn.t0), 0, 1);
+        spareGroup.visible = true;
+        spareGroup.position.set(lerp(aisleX, x + 0.18, p), carryY, lerp(aisleCarryZ, carryZ, p));
+      } else {
+        spareGroup.visible = false;
+      }
+    } else if (t <= swap.t1) {
+      const p = clamp((t - swap.t0) / (swap.t1 - swap.t0), 0, 1);
+      // 0.00..0.45: operator lifts empty tray out to left staging; 0.45..1.00: seats full tray
+      if (p <= 0.15) {
+        const s = p / 0.15;
+        emptyGroup.position.set(x, lerp(y, y + 0.08, s), z);
+      } else if (p <= 0.45) {
+        const s = (p - 0.15) / 0.30;
+        emptyGroup.position.set(lerp(x, x - 0.18, s), lerp(y + 0.08, carryY, s), lerp(z, carryZ, s));
+      } else {
+        emptyGroup.position.set(x - 0.18, carryY, carryZ);
+      }
+      emptyGroup.visible = true;
+
+      if (p < 0.45) {
+        spareGroup.position.set(x + 0.18, carryY, carryZ);
+      } else if (p <= 0.85) {
+        const s = (p - 0.45) / 0.40;
+        spareGroup.position.set(lerp(x + 0.18, x, s), lerp(carryY, y + 0.08, s), lerp(carryZ, z, s));
+      } else {
+        const s = (p - 0.85) / 0.15;
+        spareGroup.position.set(x, lerp(y + 0.08, y, s), z);
+      }
+      spareGroup.visible = true;
+    } else {
+      spareGroup.visible = true;
+      spareGroup.position.set(x, y, z);
+      if (walkOut && t <= walkOut.t1) {
+        const p = clamp((t - walkOut.t0) / (walkOut.t1 - walkOut.t0), 0, 1);
+        emptyGroup.visible = true;
+        emptyGroup.position.set(lerp(x - 0.18, aisleX, p), carryY, lerp(carryZ, aisleCarryZ, p));
+      } else {
+        emptyGroup.visible = false;
+      }
+    }
+  });
+}
+
+function poseParts(t) {
+  const { S, parts, beltSpeed } = current();
+  const [lo] = robotSample(t);
+  const held = S.fHeld[lo];
+  const timeline = partSchedule();
+  urCover.visible = false;
+  urScrew.visible = false;
+  for (const part of parts) {
+    const { k, end } = part;
+    const { center, cover, screws } = partMeshes[k];
+    const times = timeline[k];
+    const grip = held.indexOf(k);
+    center.visible = t >= part.release;
+    center.quaternion.identity();
+    if (grip !== -1) {
+      placeOnTool(center, fanucScene.grips[grip].marker, 0);
+    } else if (t < times.load) {
+      center.position.set(ESC_X + beltSpeed * (t - part.release),
+        CELL.infeed.top + housingHalf, CELL.infeed.z);
+    } else if (t < times.release) {
+      center.position.set(...CELL.fixture.pos);
+      center.position.y += housingHalf;
+    } else {
+      center.position.set(...end.p);
+      if (part.reject) {
+        const fall = clamp((t - times.release) / (end.t - times.release), 0, 1);
+        center.position.y = THREE.MathUtils.lerp(CELL.rejectBin.pos[1] + 0.04, end.p[1], fall ** 2);
+      } else {
+        center.position.x += CELL.outfeed.speed * (t - end.t);
+        center.visible = center.position.x - CELL.housing[0] / 2 <= CELL.outfeed.x1;
+      }
+    }
+    cover.visible = t >= times.cover;
+    if (t >= times.acquire && t < times.cover) {
+      urCover.visible = true;
+      placeOnTool(urCover, urScene.tcp, COVER_H);
+    }
+    times.screws.forEach(({ i, approach, t1 }) => {
+      screws[i].visible = t >= t1;
+      if (t >= approach && t < t1) {
+        urScrew.visible = true;
+        placeOnTool(urScrew, urScene.tcp, screwHeadHeight);
+      }
+    });
+  }
+  poseTrays(t, timeline);
+}
+
+function poseAt(t) {
+  const time = Math.max(0, t);
+  const robotTime = Math.min(time, current().DURATION);
+  poseFanuc(robotTime);
+  poseUr(robotTime);
+  poseParts(time);
+}
+// SPEC §6 camera views. World metres, Y-up. pos/target stay plain arrays so
+// __cell.views can hand them to the film one frame at a time.
+// Local face of the operator mannequin is unrelated; these are camera poses only.
+const views = {
+  iso: { pos: [2.55, 4.05, 5.15], target: [-0.05, 0.85, 0.15] },
+  front: { pos: [-1.45, 2.45, 4.35], target: [0.25, 1.05, 0.05] },
+  side: { pos: [4.70, 2.05, 0.35], target: [0.00, 0.95, 0.15] },
+  top: { pos: [0.15, 6.10, 0.70], target: [0.05, 0.00, 0.30] },
+  fanuc: { pos: [-1.65, 1.35, -0.05], target: [-0.15, 0.98, -0.55] },
+  ur: { pos: [1.45, 1.60, 2.05], target: [0.05, 1.02, 0.55] },
+  operator: { pos: [2.35, 1.70, 2.90], target: [0.50, 1.30, 1.48] },
+};
+
+let flight = null;
+
+function ease(u) {
+  const t = clamp(u, 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
+function viewVector(tuple) {
+  return new THREE.Vector3(tuple[0], tuple[1], tuple[2]);
+}
+
+function setView(name) {
+  const v = views[name];
+  if (!v) return;
+  flight = {
+    t: 0,
+    fromP: camera.position.clone(),
+    fromT: controls.target.clone(),
+    toP: viewVector(v.pos),
+    toT: viewVector(v.target),
+  };
+  document.querySelectorAll(".views button").forEach((b) => {
+    b.setAttribute("aria-pressed", String(b.dataset.view === name));
+  });
+}
+
+// Instant cut. Cancels an in-progress flight. The film calls this every frame.
+function setCamera(pos, target) {
+  if (!pos || !target || pos.length < 3 || target.length < 3) return;
+  flight = null;
+  camera.position.set(pos[0], pos[1], pos[2]);
+  controls.target.set(target[0], target[1], target[2]);
+  controls.update();
+  document.querySelectorAll(".views button").forEach((b) => b.setAttribute("aria-pressed", "false"));
+}
+
+// Advance the 0.8 s view flight. Does not pose robots.
+function tickFlight(dt) {
+  if (!flight) return;
+  flight.t = Math.min(1, flight.t + dt / 0.8);
+  const e = ease(flight.t);
+  camera.position.lerpVectors(flight.fromP, flight.toP, e);
+  controls.target.lerpVectors(flight.fromT, flight.toT, e);
+  if (flight.t >= 1) flight = null;
+}
+
+camera.position.set(views.iso.pos[0], views.iso.pos[1], views.iso.pos[2]);
+controls.target.set(views.iso.target[0], views.iso.target[1], views.iso.target[2]);
+controls.update();
+
+document.querySelectorAll(".views button").forEach((b) => {
+  b.addEventListener("click", () => setView(b.dataset.view));
+});
+controls.addEventListener("start", () => {
+  flight = null;
+  document.querySelectorAll(".views button").forEach((b) => b.setAttribute("aria-pressed", "false"));
+});
+// HMI, Gantt, operator mannequin, trails, and what-if belt speed.
+// NIS2: no network, no eval, no new storage keys. Theme and HQ stay on their existing keys.
+
+let mode = "program";
+
+const GANTT_ACTORS = ["fanuc", "ur", "camera", "operator"];
+const LANE = {
+  fanuc: { short: "FANUC", name: "FANUC", color: "#d99b00" },
+  ur: { short: "UR5e", name: "UR5e", color: "#1d6fb8" },
+  camera: { short: "CAM", name: "Camera", color: "#4d5b66" },
+  operator: { short: "OPER", name: "Operator", color: "#2b8a57" },
+};
+const KIND_LABEL = {
+  pick: "Pick housing",
+  load: "Load fixture",
+  unload: "Unload fixture",
+  swivel: "Swivel gripper",
+  place_out: "Place outfeed",
+  place_bin: "Reject to bin",
+  cover: "Place cover",
+  screw: "Drive screw",
+  inspect: "Inspect",
+  move: "Move",
+  wait: "Wait",
+  walk_in: "Walk in",
+  walk_out: "Walk out",
+  swap: "Swap tray",
+  away: "In the aisle",
+};
+const PROGRAM_KINDS = new Set([
+  "pick", "swivel", "load", "unload", "place_out", "place_bin",
+  "cover", "screw", "inspect", "walk_in", "swap", "walk_out",
+]);
+const OWNER_LABEL = { fanuc: "FANUC", ur: "UR5e", camera: "Camera" };
+const BELT_KEYS = [0.05, 0.10, 0.15, 0.20];
+
+const openPanels = {
+  program: new Set(["live-card"]),
+  manual: new Set(["live-card"]),
+};
+
+function setText(id, value) {
+  const el = $(id);
+  if (el && el.textContent !== value) el.textContent = value;
+}
+
+function pct(x) {
+  return (Number(x) * 100).toFixed(1) + "%";
+}
+
+function snapBelt(v) {
+  return Math.round(clamp(Number(v), 0.05, 0.20) * 100) / 100;
+}
+
+function uiSegment(list, t) {
+  if (!list || !list.length) return null;
+  let lo = 0;
+  let hi = list.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (list[mid].t0 <= t + 1e-9) lo = mid;
+    else hi = mid - 1;
+  }
+  return list[lo];
+}
+
+function operatorInWarning(xz) {
+  const c = CELL.scanner.center;
+  return Math.hypot(xz[0] - c[0], xz[1] - c[1]) <= CELL.scanner.warn + 1e-9;
+}
+
+function sampleAt(t, model) {
+  const [i0, i1, f] = robotSample(t);
+  const a = model.S.opPos[i0];
+  const b = model.S.opPos[i1] || a;
+  const mix = (u, v) => u.map((x, j) => x + ((v[j] - x) * f));
+  return {
+    i0,
+    xz: [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f],
+    fq: mix(model.S.fq[i0], model.S.fq[i1]),
+    uq: mix(model.S.uq[i0], model.S.uq[i1]),
+    grip: model.S.fGrip[i0],
+    swivel: model.S.fSwivel[i0],
+    held: model.S.fHeld[i0] || [null, null],
+    fanuc: uiSegment(model.segs.fanuc, t),
+    ur: uiSegment(model.segs.ur, t),
+    camera: uiSegment(model.segs.camera, t),
+    operator: uiSegment(model.segs.operator, t),
+  };
+}
+
+function actionText(seg) {
+  if (!seg) return "Hold";
+  const label = KIND_LABEL[seg.kind] || "Hold";
+  if (seg.kind === "wait" || seg.kind === "away") return label;
+  const bits = [label];
+  if (Number.isInteger(seg.k)) bits.push(String(seg.k + 1));
+  if (Number.isInteger(seg.i)) bits.push((seg.i + 1) + "/4");
+  return bits.join(" ");
+}
+
+function detailText(seg) {
+  const bits = [];
+  if (Number.isInteger(seg.k)) bits.push("housing " + (seg.k + 1));
+  if (Number.isInteger(seg.tray)) bits.push("tray " + (seg.tray + 1));
+  if (Number.isInteger(seg.slot)) bits.push("slot " + (seg.slot + 1));
+  if (Number.isInteger(seg.i)) bits.push("screw " + (seg.i + 1));
+  bits.push(seg.t0.toFixed(1) + " s");
+  return bits.join(" · ");
+}
+
+function slotName(h) {
+  return h == null ? "empty" : ("H" + (h + 1));
+}
+
+function gripLine(sample) {
+  const held = sample.held;
+  const active = sample.grip === 1 ? "B" : "A";
+  const deg = Math.round((sample.swivel || 0) * DEG);
+  return "Active " + active + " · A " + slotName(held[0]) + " · B " + slotName(held[1]) + " · " + deg + "°";
+}
+
+function statusText(warn) {
+  if (warn) return "Scanner warning";
+  if (mode === "manual") return "Manual";
+  if (playing) return "Running";
+  return "Hold";
+}
+
+// ---------------------------------------------------------------- panels
+function syncPanels() {
+  document.querySelectorAll(".rail-item[data-panel]").forEach((b) => {
+    const allowed = (b.dataset.modes || "").split(/\s+/).includes(mode);
+    b.hidden = !allowed;
+    b.setAttribute("aria-pressed", String(allowed && openPanels[mode].has(b.dataset.panel)));
+  });
+  document.querySelectorAll(".drawer .card").forEach((c) => {
+    c.hidden = !openPanels[mode].has(c.id);
+  });
+  const drawer = $("drawer");
+  if (drawer) drawer.hidden = openPanels[mode].size === 0;
+  if (openPanels[mode].has("whatif-card")) ensureBeltCache();
+}
+
+function setMode(next) {
+  const name = next === "manual" ? "manual" : "program";
+  const changed = name !== mode;
+  mode = name;
+  document.querySelectorAll(".mode-switch button").forEach((b) => {
+    b.setAttribute("aria-pressed", String(b.dataset.mode === mode));
+  });
+  if (changed && mode === "manual") setPlaying(false);
+  syncPanels();
+  syncTrailVisibility();
+  if (changed) renderAt(time);
+}
+
+document.querySelectorAll(".rail-item[data-panel]").forEach((b) => {
+  b.addEventListener("click", () => {
+    if (!(b.dataset.modes || "").split(/\s+/).includes(mode)) return;
+    const set = openPanels[mode];
+    if (set.has(b.dataset.panel)) set.delete(b.dataset.panel);
+    else set.add(b.dataset.panel);
+    syncPanels();
+  });
+});
+document.querySelectorAll(".card .close").forEach((b) => {
+  b.addEventListener("click", () => {
+    const card = b.closest(".card");
+    if (card) openPanels[mode].delete(card.id);
+    syncPanels();
+  });
+});
+document.querySelectorAll(".mode-switch button").forEach((b) => {
+  b.addEventListener("click", () => setMode(b.dataset.mode));
+});
+
+// ---------------------------------------------------------------- operator mannequin
+// Local face is −z (nose and eyes sit at local z < 0).
+// Heading uses rotation.y = atan2(-dx, -dz): aisle → station is (0, −z), so yaw 0 looks into the cell.
+// A hanging arm (local −y) with positive rotation.x reaches toward that face.
+const skinMat = new THREE.MeshStandardMaterial({ color: 0xc68642, roughness: 0.72, metalness: 0 });
+const suitMat = new THREE.MeshStandardMaterial({ color: 0x1c3f66, roughness: 0.78, metalness: 0.02 });
+const vestMat = new THREE.MeshStandardMaterial({ color: 0xe0a800, roughness: 0.62, metalness: 0.04 });
+const shoeMat = new THREE.MeshStandardMaterial({ color: 0x1a1c20, roughness: 0.86, metalness: 0 });
+const hairMat = new THREE.MeshStandardMaterial({ color: 0x2a211c, roughness: 0.8, metalness: 0 });
+const eyeMat = new THREE.MeshStandardMaterial({ color: 0x141414, roughness: 0.35, metalness: 0 });
+
+const operatorRig = new THREE.Group();
+operatorRig.name = "operator";
+world.add(operatorRig);
+box(0.12, 0.80, 0.14, suitMat, -0.09, 0.48, 0, operatorRig);
+box(0.12, 0.80, 0.14, suitMat, 0.09, 0.48, 0, operatorRig);
+box(0.12, 0.08, 0.26, shoeMat, -0.09, 0.04, -0.02, operatorRig);
+box(0.12, 0.08, 0.26, shoeMat, 0.09, 0.04, -0.02, operatorRig);
+box(0.38, 0.52, 0.20, suitMat, 0, 1.14, 0, operatorRig);
+box(0.32, 0.34, 0.025, vestMat, 0, 1.18, -0.112, operatorRig);
+const operatorHead = mesh(new THREE.SphereGeometry(0.115, 28, 18), skinMat, operatorRig);
+operatorHead.position.set(0, 1.56, 0);
+const operatorHair = mesh(new THREE.SphereGeometry(0.118, 20, 12), hairMat, operatorRig);
+operatorHair.position.set(0, 1.63, 0.012);
+operatorHair.scale.set(1.02, 0.52, 0.96);
+box(0.035, 0.04, 0.04, skinMat, 0, 1.55, -0.125, operatorRig);
+mesh(new THREE.SphereGeometry(0.016, 12, 8), eyeMat, operatorRig).position.set(-0.04, 1.585, -0.1);
+mesh(new THREE.SphereGeometry(0.016, 12, 8), eyeMat, operatorRig).position.set(0.04, 1.585, -0.1);
+
+function makeArm(x) {
+  const g = new THREE.Group();
+  g.position.set(x, 1.36, 0);
+  operatorRig.add(g);
+  box(0.09, 0.56, 0.09, suitMat, 0, -0.30, 0, g);
+  box(0.075, 0.08, 0.08, skinMat, 0, -0.62, -0.01, g);
+  return g;
+}
+const armL = makeArm(-0.25);
+const armR = makeArm(0.25);
+
+function poseOperator(sample, t) {
+  const xz = sample.xz;
+  operatorRig.position.set(xz[0], 0, xz[1]);
+  const seg = sample.operator;
+  // walk_out travels +z. atan2(-0, -(+1)) = π, so the −z face turns toward the aisle.
+  operatorRig.rotation.y = seg && seg.kind === "walk_out" ? Math.PI : 0;
+  const swapping = seg && seg.kind === "swap";
+  const walking = seg && (seg.kind === "walk_in" || seg.kind === "walk_out");
+  if (swapping) {
+    armL.rotation.set(1.15, 0, 0.35);
+    armR.rotation.set(1.15, 0, -0.35);
+  } else if (walking) {
+    const swing = Math.sin(t * 8) * 0.45;
+    armL.rotation.set(0.15 + swing, 0, 0);
+    armR.rotation.set(0.15 - swing, 0, 0);
+  } else {
+    armL.rotation.set(0.12, 0, 0.08);
+    armR.rotation.set(0.12, 0, -0.08);
+  }
+}
+
+// ---------------------------------------------------------------- guards and TCP trails
+const scannerZoneMats = new Set([M.warnYellow, M.warnRing, M.protectRed, M.protectRing]);
+const scannerZones = [];
+world.traverse((o) => {
+  if (!o.isMesh || !o.material) return;
+  const list = Array.isArray(o.material) ? o.material : [o.material];
+  if (list.some((m) => scannerZoneMats.has(m))) scannerZones.push(o);
+});
+
+function applyGuards(on) {
+  guardPanels.visible = !!on;
+  for (const o of scannerZones) o.visible = !!on;
+}
+
+const trailGroup = new THREE.Group();
+trailGroup.name = "tcp-trails";
+world.add(trailGroup);
+let trailLive = [];
+
+function rebuildTrails(model) {
+  while (trailGroup.children.length) {
+    const child = trailGroup.children[0];
+    child.geometry.dispose();
+    child.material.dispose();
+    trailGroup.remove(child);
+  }
+  trailLive = [];
+  const n = model.S.t.length;
+  const add = (points, color, live) => {
+    const arr = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) {
+      const p = points[i];
+      arr[i * 3] = p[0];
+      arr[i * 3 + 1] = p[1];
+      arr[i * 3 + 2] = p[2];
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(arr, 3));
+    if (live) geo.setDrawRange(0, 1);
+    const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: live ? 0.95 : 0.18 });
+    const line = new THREE.Line(geo, mat);
+    line.frustumCulled = false;
+    trailGroup.add(line);
+    if (live) trailLive.push(line);
+  };
+  add(model.S.fTcp, 0xd99b00, false);
+  add(model.S.fTcp, 0xd99b00, true);
+  add(model.S.uTcp, 0x1d6fb8, false);
+  add(model.S.uTcp, 0x1d6fb8, true);
+  syncTrailVisibility();
+}
+
+function syncTrailVisibility() {
+  const boxEl = $("trail");
+  const on = !!(boxEl && boxEl.checked) && !document.documentElement.classList.contains("shot-mode");
+  trailGroup.visible = on;
+}
+
+function updateTrailRange(t, model) {
+  if (!trailLive.length) return;
+  const count = Math.min(model.S.t.length, sampleAt(t, model).i0 + 1);
+  for (const line of trailLive) line.geometry.setDrawRange(0, count);
+}
+
+$("guards").addEventListener("change", () => applyGuards($("guards").checked));
+$("trail").addEventListener("change", () => syncTrailVisibility());
+
+// ---------------------------------------------------------------- program, gantt, joints, report
+let programItems = [];
+let programRows = [];
+let lastProgramRow = null;
+let laneModel = null;
+const trayAcquireCache = new WeakMap();
+
+function acquiresOf(model) {
+  let found = trayAcquireCache.get(model);
+  if (!found) {
+    found = Array(model.parts.length).fill(Infinity);
+    for (const seg of model.segs.ur) {
+      if (seg.kind === "move" && Number.isInteger(seg.k) && found[seg.k] === Infinity) found[seg.k] = seg.t1;
+    }
+    trayAcquireCache.set(model, found);
+  }
+  return found;
+}
+
+function trayRemaining(model, tray, t) {
+  const swap = model.trays.swaps.find((s) => s.tray === tray);
+  if (swap && t >= swap.t1 - 1e-9) return 6;
+  const got = acquiresOf(model);
+  let left = 0;
+  for (let slot = 0; slot < 6; slot++) if (t < got[tray * 6 + slot]) left++;
+  return left;
+}
+
+function yieldAt(model, t) {
+  let good = 0;
+  let bad = 0;
+  for (const part of model.parts) {
+    if (t + 1e-9 < part.end.t) continue;
+    if (part.reject) bad++;
+    else good++;
+  }
+  return { good, bad, total: model.parts.length };
+}
+
+function busySeconds(model, actor) {
+  if (actor !== "operator" && model.util && model.util[actor] != null) return model.util[actor] * model.DURATION;
+  return (model.segs[actor] || []).reduce((sum, seg) => {
+    if (seg.kind === "wait" || seg.kind === "away") return sum;
+    return sum + (seg.t1 - seg.t0);
+  }, 0);
+}
+
+function buildProgram(model) {
+  const list = $("program");
+  list.replaceChildren();
+  programItems = [];
+  for (const actor of GANTT_ACTORS) {
+    for (const seg of model.segs[actor]) {
+      if (PROGRAM_KINDS.has(seg.kind)) programItems.push({ ...seg, actor });
+    }
+  }
+  programItems.sort((a, b) => a.t0 - b.t0 || GANTT_ACTORS.indexOf(a.actor) - GANTT_ACTORS.indexOf(b.actor));
+  setText("program-total", programItems.length + " steps · " + model.DURATION.toFixed(1) + " s");
+  programRows = programItems.map((it) => {
+    const li = document.createElement("li");
+    const fill = document.createElement("i");
+    fill.className = "fill";
+    const chip = document.createElement("span");
+    chip.className = "chip " + (it.actor === "operator" ? "op" : it.actor);
+    chip.textContent = LANE[it.actor].short;
+    const label = document.createElement("span");
+    label.className = "label";
+    label.textContent = KIND_LABEL[it.kind] || it.kind;
+    const dur = document.createElement("span");
+    dur.className = "dur";
+    dur.textContent = (it.t1 - it.t0).toFixed(2) + " s";
+    const code = document.createElement("code");
+    code.textContent = detailText(it);
+    li.append(fill, chip, label, dur, code);
+    li.addEventListener("click", () => {
+      const mid = Math.min(1e-3, Math.max(1e-4, (it.t1 - it.t0) * 0.25));
+      seek(it.t0 + mid);
+    });
+    list.append(li);
+    return li;
+  });
+  lastProgramRow = null;
+}
+
+function markProgram(t) {
+  let first = null;
+  for (let i = 0; i < programItems.length; i++) {
+    const it = programItems[i];
+    const li = programRows[i];
+    const active = t >= it.t0 && t < it.t1;
+    li.classList.toggle("active", active);
+    li.classList.toggle("done", t >= it.t1);
+    const width = active ? ((t - it.t0) / Math.max(1e-6, it.t1 - it.t0)) * 100 : 0;
+    li.firstChild.style.width = width.toFixed(1) + "%";
+    if (active && !first) first = li;
+  }
+  const card = $("program-card");
+  if (first && playing && card && !card.hidden && first !== lastProgramRow) {
+    lastProgramRow = first;
+    const list = $("program");
+    const delta = first.getBoundingClientRect().top - list.getBoundingClientRect().top;
+    list.scrollTop += delta - 36;
+  }
+  if (!first) lastProgramRow = null;
+}
+
+const GANTT_W = 330;
+const GANTT_LEFT = 54;
+const GANTT_ROW = 22;
+function renderGantt(model) {
+  const dur = model.DURATION || 1;
+  const top = 6;
+  const plotW = GANTT_W - GANTT_LEFT - 8;
+  const H = top + GANTT_ROW * GANTT_ACTORS.length + 22;
+  const xOf = (t0) => GANTT_LEFT + (t0 / dur) * plotW;
+  const parts = [`<svg viewBox="0 0 ${GANTT_W} ${H}" role="img" aria-label="Cycle timing">`];
+  GANTT_ACTORS.forEach((actor, row) => {
+    const y = top + row * GANTT_ROW;
+    parts.push(`<text x="0" y="${y + 14}" fill="var(--muted)" font-size="11">${LANE[actor].short}</text>`);
+    parts.push(`<rect x="${GANTT_LEFT}" y="${y + 4}" width="${plotW}" height="${GANTT_ROW - 10}" rx="3" fill="var(--panel-2)"/>`);
+    for (const seg of model.segs[actor]) {
+      if (seg.kind === "wait" || seg.kind === "away") continue;
+      const x = xOf(seg.t0);
+      const w = Math.max(0.8, xOf(seg.t1) - x);
+      parts.push(`<rect x="${x.toFixed(2)}" y="${y + 4}" width="${w.toFixed(2)}" height="${GANTT_ROW - 10}" fill="${LANE[actor].color}"/>`);
+    }
+  });
+  for (let i = 0; i <= 4; i++) {
+    const tick = (dur * i) / 4;
+    parts.push(`<text x="${xOf(tick).toFixed(1)}" y="${H - 6}" text-anchor="middle" fill="var(--faint)" font-size="10">${tick.toFixed(0)}</text>`);
+  }
+  parts.push(`<line id="gantt-cursor" x1="${GANTT_LEFT}" y1="${top}" x2="${GANTT_LEFT}" y2="${top + GANTT_ROW * GANTT_ACTORS.length - 4}" stroke="var(--accent)" stroke-width="2"/>`);
+  parts.push("</svg>");
+  const legend = GANTT_ACTORS.map((actor) => {
+    const busy = busySeconds(model, actor);
+    const share = dur > 0 ? (busy / dur) * 100 : 0;
+    return `<span><i style="background:${LANE[actor].color}"></i>${LANE[actor].name} ${busy.toFixed(1)} s · ${share.toFixed(0)}%</span>`;
+  }).join("");
+  $("gantt").innerHTML = parts.join("") + `<div class="gantt-legend">${legend}</div>`;
+}
+
+function moveGanttCursor(t, model) {
+  const line = document.getElementById("gantt-cursor");
+  if (!line) return;
+  const dur = model.DURATION || 1;
+  const plotW = GANTT_W - GANTT_LEFT - 8;
+  const x = GANTT_LEFT + (clamp(t, 0, dur) / dur) * plotW;
+  line.setAttribute("x1", x.toFixed(2));
+  line.setAttribute("x2", x.toFixed(2));
+}
+
+function drawLanes(model) {
+  laneModel = model;
+  const canvas = $("lanes");
+  if (!canvas) return;
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  if (!w || !h) return;
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.width = Math.floor(w * dpr);
+  canvas.height = Math.floor(h * dpr);
+  const g = canvas.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+  const dur = model.DURATION || 1;
+  const rowH = h / GANTT_ACTORS.length;
+  const track = css("--line") || "#d8dce3";
+  GANTT_ACTORS.forEach((actor, row) => {
+    const y = row * rowH + 2;
+    const bh = Math.max(3, rowH - 4);
+    g.fillStyle = track;
+    g.fillRect(0, y, w, bh);
+    g.fillStyle = LANE[actor].color;
+    for (const seg of model.segs[actor]) {
+      if (seg.kind === "wait" || seg.kind === "away") continue;
+      const x = (seg.t0 / dur) * w;
+      g.fillRect(x, y, Math.max(1, ((seg.t1 - seg.t0) / dur) * w), bh);
+    }
+  });
+}
+
+let jointRows = [];
+function buildJoints() {
+  const root = $("joints");
+  root.replaceChildren();
+  jointRows = [];
+  const add = (title, lims) => {
+    const h = document.createElement("h3");
+    h.textContent = title;
+    root.append(h);
+    lims.forEach((pair, index) => {
+      const row = document.createElement("div");
+      row.className = "joint";
+      const name = document.createElement("span");
+      name.textContent = "J" + (index + 1);
+      const track = document.createElement("div");
+      track.className = "track";
+      const dot = document.createElement("i");
+      track.append(dot);
+      const value = document.createElement("span");
+      value.className = "v";
+      value.textContent = "0.0°";
+      row.append(name, track, value);
+      root.append(row);
+      jointRows.push({ lo: pair[0], hi: pair[1], track, dot, v: value });
+    });
+  };
+  add(FANUC.name, FANUC.lim);
+  add(UR.name, UR.lim);
+}
+
+function showJoints(sample) {
+  const vals = sample.fq.concat(sample.uq);
+  for (let i = 0; i < jointRows.length; i++) {
+    const row = jointRows[i];
+    const q = vals[i];
+    const span = row.hi - row.lo || 1;
+    const f = (q - row.lo) / span;
+    row.dot.style.left = (clamp(f, 0, 1) * 100).toFixed(2) + "%";
+    row.v.textContent = (q * DEG).toFixed(1) + "°";
+    row.track.classList.toggle("near", f < 0.04 || f > 0.96);
+  }
+}
+
+function buildTcp() {
+  const root = $("tcp");
+  root.replaceChildren();
+  for (const [id, label, chip] of [["fanuc", "FANUC", "fanuc"], ["ur", "UR5e", "ur"]]) {
+    const badge = document.createElement("span");
+    badge.className = "chip " + chip;
+    badge.textContent = label;
+    root.append(badge);
+    for (const axis of ["x", "y", "z"]) {
+      const cell = document.createElement("div");
+      const small = document.createElement("small");
+      small.textContent = axis;
+      const b = document.createElement("b");
+      b.id = "tcp-" + id + "-" + axis;
+      b.textContent = "0";
+      cell.append(small, b);
+      root.append(cell);
+    }
+  }
+}
+
+function renderReport(model) {
+  const good = model.parts.filter((part) => !part.reject).length;
+  const bad = model.parts.length - good;
+  const rows = [
+    ["Cycle", model.DURATION.toFixed(2) + " s"],
+    ["Infeed belt", model.beltSpeed.toFixed(2) + " m/s"],
+    ["Housings good / reject", good + " / " + bad],
+    ["FANUC utilisation", pct(model.util.fanuc)],
+    ["UR5e utilisation", pct(model.util.ur)],
+    ["Camera utilisation", pct(model.util.camera)],
+    ["Minimum clearance", Math.round(model.minClear.m * 1000) + " mm at " + model.minClear.at.toFixed(2) + " s"],
+    ["Clearance pair", "FANUC ↔ UR5e"],
+    ["FANUC gripper", "Dual, on a 180° rotator"],
+    ["UR TCP cap", "1.00 m/s, or 0.25 m/s in the warning field"],
+    ["Scanner", "warn " + CELL.scanner.warn.toFixed(2) + " m · protect " + CELL.scanner.protect.toFixed(2) + " m"],
+    ["Housing", Math.round(CELL.housing[0] * 1000) + " × " + Math.round(CELL.housing[1] * 1000) + " × " + Math.round(CELL.housing[2] * 1000) + " mm"],
+    ["Fixture", "one mutex, FANUC / UR5e / camera"],
+  ];
+  $("report").innerHTML = rows.map(([k, v]) => "<dt>" + k + "</dt><dd>" + v + "</dd>").join("");
+}
+
+function showTcp() {
+  const write = (name, p) => {
+    if (!p) return;
+    setText("tcp-" + name + "-x", (p[0] * 1000).toFixed(0));
+    setText("tcp-" + name + "-y", (p[1] * 1000).toFixed(0));
+    setText("tcp-" + name + "-z", (p[2] * 1000).toFixed(0));
+  };
+  write("fanuc", tcp("fanuc"));
+  write("ur", tcp("ur"));
+}
+
+function fixtureOwner(model, t) {
+  const zones = model.zones && model.zones.fixture;
+  if (!zones) return "";
+  for (const name of ["fanuc", "ur", "camera"]) {
+    for (const span of zones[name] || []) {
+      if (t >= span[0] && t < span[1]) return name;
+    }
+  }
+  return "";
+}
+
+function fillStatic(model) {
+  const h = CELL.housing;
+  setText("s-belt", model.beltSpeed.toFixed(2));
+  setText("s-cycle", model.DURATION.toFixed(1));
+  setText("s-clear", String(Math.round(model.minClear.m * 1000)));
+  setText("s-clear-pair", "FANUC ↔ UR5e · " + model.minClear.at.toFixed(1) + " s");
+  setText("s-util", "FANUC " + pct(model.util.fanuc) + " · UR " + pct(model.util.ur) + " · cam " + pct(model.util.camera));
+  setText("clock-total", model.DURATION.toFixed(1));
+  const tl = $("timeline");
+  if (tl) tl.setAttribute("aria-valuemax", model.DURATION.toFixed(1));
+  const note = $("live-note");
+  if (note) {
+    note.textContent = "12 housings " + Math.round(h[0] * 1000) + "×" + Math.round(h[1] * 1000) + "×" + Math.round(h[2] * 1000)
+      + " mm · dual gripper on a 180° rotator · belt " + model.beltSpeed.toFixed(2)
+      + " m/s · cycle " + model.DURATION.toFixed(1) + " s · FANUC " + pct(model.util.fanuc)
+      + " · UR5e " + pct(model.util.ur) + " · camera " + pct(model.util.camera);
+  }
+}
+
+function applyStack(warn) {
+  const run = playing && mode === "program" && !warn;
+  stackLamps.green.emissiveIntensity = run ? 1.7 : 0;
+  stackLamps.amber.emissiveIntensity = warn ? 1.7 : 0;
+  stackLamps.red.emissiveIntensity = 0;
+}
+
+function moveCursors(t, model) {
+  const dur = model.DURATION || 1;
+  const head = $("playhead");
+  if (head) head.style.left = (clamp(t, 0, dur) / dur * 100) + "%";
+  const tl = $("timeline");
+  if (tl) tl.setAttribute("aria-valuenow", t.toFixed(1));
+  moveGanttCursor(t, model);
+}
+
+function syncText(t, model, sample, warn) {
+  const owner = fixtureOwner(model, t);
+  const ownerEl = $("zone-owner-fixture");
+  const ownerDot = $("zone-dot-fixture");
+  if (ownerEl) ownerEl.textContent = owner ? OWNER_LABEL[owner] : "free";
+  if (ownerDot) ownerDot.style.background = owner ? LANE[owner].color : "var(--faint)";
+  const scanDot = $("zone-dot-scanner");
+  if (scanDot) scanDot.style.background = warn ? "var(--accent)" : "var(--good)";
+  setText("zone-owner-scanner", warn ? "warning" : "clear");
+
+  const scannerStat = $("s-scanner-stat");
+  if (scannerStat) {
+    scannerStat.classList.toggle("warn", warn);
+    scannerStat.classList.toggle("ok", !warn);
+  }
+  setText("s-scanner", warn ? "Warning" : "Clear");
+  setText("s-scanner-sub", warn ? "Operator inside 1.20 m" : "warn 1.20 m · protect 0.60 m");
+
+  const urStat = $("s-ur-stat");
+  if (urStat) {
+    urStat.classList.toggle("warn", warn);
+    urStat.classList.toggle("ok", !warn);
+  }
+  setText("s-ur-speed", warn ? "≤ 0.25 m/s" : "1.00 m/s");
+  setText("s-ur-speed-sub", warn ? "Reduced while the operator is in the field" : "Nominal TCP cap");
+
+  const made = yieldAt(model, t);
+  setText("s-yield", made.good + " / " + made.bad);
+  setText("s-yield-sub", "of " + made.total + " housings");
+  const yieldStat = $("s-yield-stat");
+  if (yieldStat) {
+    yieldStat.classList.toggle("bad", made.bad > 0);
+    yieldStat.classList.toggle("ok", made.good > 0 && made.bad === 0);
+  }
+  setText("s-trays", trayRemaining(model, 0, t) + " · " + trayRemaining(model, 1, t));
+  setText("s-grip", sample.grip === 1 ? "B" : "A");
+  setText("s-grip-sub", gripLine(sample));
+
+  setText("now-conv", model.beltSpeed.toFixed(2) + " m/s");
+  setText("cmd-conv", playing && mode === "program" ? "Indexing" : "Hold");
+  setText("now-fanuc", actionText(sample.fanuc));
+  setText("cmd-fanuc", gripLine(sample));
+  setText("now-ur", actionText(sample.ur));
+  setText("cmd-ur", warn ? "Reduced TCP ≤ 0.25 m/s" : "TCP cap 1.00 m/s");
+  setText("now-op", actionText(sample.operator));
+  setText("cmd-op", "x " + sample.xz[0].toFixed(2) + " · z " + sample.xz[1].toFixed(2) + (warn ? " · warning field" : " · clear"));
+
+  showJoints(sample);
+  showTcp();
+  markProgram(t);
+}
+
+let hmiStamp = -1e9;
+function paintHmi(t, model, sample, warn, force) {
+  const nowMs = performance.now();
+  if (!force && nowMs - hmiStamp < 200) return;
+  hmiStamp = nowMs;
+  const canvas = hmiScreen.canvas;
+  const g = canvas.getContext("2d");
+  const run = playing && mode === "program" && !warn;
+  g.fillStyle = "#12171e";
+  g.fillRect(0, 0, canvas.width, canvas.height);
+  g.fillStyle = "#f5b800";
+  g.font = "700 34px sans-serif";
+  g.fillText("FANUC + UR5e", 28, 52);
+  g.fillStyle = warn ? "#e0b15a" : (run ? "#7ddea0" : "#e0b15a");
+  g.font = "700 48px sans-serif";
+  g.fillText(warn ? "WARN" : (run ? "RUN" : "HOLD"), 28, 114);
+  g.fillStyle = "#d7dee6";
+  g.font = "500 26px ui-monospace, monospace";
+  const made = yieldAt(model, t);
+  const lines = [
+    "Time    " + t.toFixed(1) + " / " + model.DURATION.toFixed(1) + " s",
+    "Good " + made.good + "   Reject " + made.bad,
+    gripLine(sample),
+    "Belt    " + model.beltSpeed.toFixed(2) + " m/s",
+    "Clear   " + Math.round(model.minClear.m * 1000) + " mm",
+  ];
+  lines.forEach((line, i) => g.fillText(line, 28, 168 + i * 38));
+  hmiScreen.texture.needsUpdate = true;
+}
+
+// ---------------------------------------------------------------- what-if
+const beltCache = new Map();
+let beltQueue = null;
+let beltTimer = 0;
+
+function fillWhatIf(model, preview) {
+  const rows = [
+    ["Cycle", model.DURATION.toFixed(2) + " s"],
+    ["FANUC", pct(model.util.fanuc)],
+    ["UR5e", pct(model.util.ur)],
+    ["Camera", pct(model.util.camera)],
+    ["Min. clearance", Math.round(model.minClear.m * 1000) + " mm"],
+  ];
+  $("whatif-kv").innerHTML = rows.map(([k, v]) => "<dt>" + k + "</dt><dd>" + v + "</dd>").join("");
+  const note = $("whatif-note");
+  if (note) {
+    note.textContent = preview
+      ? ("Preview at " + model.beltSpeed.toFixed(2) + " m/s. Release the slider to apply it.")
+      : ("Applied. Cycle " + model.DURATION.toFixed(1) + " s at " + model.beltSpeed.toFixed(2) + " m/s.");
+  }
+}
+
+function drawWhatIfChart() {
+  const host = $("whatif-chart");
+  if (!host) return;
+  const speeds = BELT_KEYS.filter((s) => beltCache.has(s.toFixed(2)));
+  if (!speeds.length) {
+    host.replaceChildren();
+    return;
+  }
+  const durations = speeds.map((s) => beltCache.get(s.toFixed(2)).DURATION);
+  const max = Math.max(...durations, 1);
+  const W = 300;
+  const H = 112;
+  const left = 8;
+  const gap = 10;
+  const bw = (W - left - 8) / speeds.length - gap;
+  const parts = [`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Cycle time against belt speed">`];
+  speeds.forEach((s, i) => {
+    const dur = beltCache.get(s.toFixed(2)).DURATION;
+    const h = (dur / max) * (H - 28);
+    const x = left + i * (bw + gap);
+    const y = H - 18 - h;
+    const on = Math.abs(s - current().beltSpeed) < 0.001;
+    parts.push(`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, h).toFixed(1)}" rx="3" fill="${on ? "#d97706" : "#8aa0b8"}"/>`);
+    parts.push(`<text x="${(x + bw / 2).toFixed(1)}" y="${H - 4}" text-anchor="middle" fill="var(--faint)" font-size="10">${s.toFixed(2)}</text>`);
+  });
+  parts.push("</svg>");
+  host.innerHTML = parts.join("");
+}
+
+function ensureBeltCache() {
+  if (beltQueue) return;
+  const live = current();
+  beltCache.set(live.beltSpeed.toFixed(2), live);
+  beltQueue = BELT_KEYS.filter((s) => !beltCache.has(s.toFixed(2)));
+  const step = () => {
+    if (!beltQueue.length) {
+      drawWhatIfChart();
+      return;
+    }
+    const speed = beltQueue.shift();
+    try {
+      beltCache.set(speed.toFixed(2), cycleFor(speed));
+    } catch (err) {
+      const note = $("whatif-note");
+      if (note) note.textContent = "Preview failed at " + speed.toFixed(2) + " m/s.";
+    }
+    drawWhatIfChart();
+    if (beltQueue.length) setTimeout(step, 40);
+  };
+  setTimeout(step, 40);
+}
+
+function commitBelt(raw) {
+  const speed = snapBelt(raw);
+  const range = $("belt-speed");
+  const num = $("belt-speed-n");
+  if (range) range.value = speed.toFixed(2);
+  if (num) num.value = speed.toFixed(2);
+  if (Math.abs(speed - current().beltSpeed) < 0.001) {
+    fillWhatIf(current(), false);
+    drawWhatIfChart();
+    return;
+  }
+  const was = playing;
+  const keep = time;
+  let model;
+  try {
+    model = rebuild(speed);
+  } catch (err) {
+    const note = $("whatif-note");
+    if (note) note.textContent = "Rebuild failed. The running cycle was left unchanged.";
+    return;
+  }
+  beltCache.set(speed.toFixed(2), model);
+  refreshChrome(model);
+  time = clamp(keep, 0, model.DURATION);
+  renderAt(time);
+  if (was) setPlaying(true);
+  fillWhatIf(model, false);
+  drawWhatIfChart();
+}
+
+function scheduleBelt(raw) {
+  clearTimeout(beltTimer);
+  beltTimer = setTimeout(() => commitBelt(raw), 200);
+}
+
+const beltRange = $("belt-speed");
+const beltNum = $("belt-speed-n");
+if (beltRange) {
+  beltRange.addEventListener("input", () => {
+    const speed = snapBelt(beltRange.value);
+    if (beltNum) beltNum.value = speed.toFixed(2);
+    const cached = beltCache.get(speed.toFixed(2));
+    if (cached) fillWhatIf(cached, Math.abs(cached.beltSpeed - current().beltSpeed) > 0.001);
+  });
+  beltRange.addEventListener("change", () => scheduleBelt(beltRange.value));
+}
+if (beltNum) {
+  beltNum.addEventListener("change", () => {
+    const speed = snapBelt(beltNum.value);
+    if (beltRange) beltRange.value = speed.toFixed(2);
+    beltNum.value = speed.toFixed(2);
+    scheduleBelt(speed);
+  });
+}
+
+// ---------------------------------------------------------------- per-frame HMI
+let uiStamp = -1e9;
+let uiT = NaN;
+
+function refreshChrome(model) {
+  buildProgram(model);
+  renderGantt(model);
+  drawLanes(model);
+  rebuildTrails(model);
+  renderReport(model);
+  fillStatic(model);
+  fillWhatIf(model, false);
+}
+
+window.__uiSync = function (t) {
+  const model = current();
+  const sample = sampleAt(t, model);
+  const warn = operatorInWarning(sample.xz);
+  poseOperator(sample, t);
+  moveCursors(t, model);
+  applyStack(warn);
+  updateTrailRange(t, model);
+  setText("live-sub", statusText(warn));
+  setText("clock-now", t.toFixed(1));
+  const nowMs = performance.now();
+  const jump = !(Math.abs(t - uiT) < 0.08);
+  uiT = t;
+  if (jump || nowMs - uiStamp >= 150) {
+    uiStamp = nowMs;
+    syncText(t, model, sample, warn);
+    paintHmi(t, model, sample, warn, true);
+  }
+};
+
+if (matchMedia("(max-width: 900px)").matches) {
+  openPanels.program.clear();
+  openPanels.manual.clear();
+}
+buildJoints();
+buildTcp();
+refreshChrome(current());
+applyGuards($("guards").checked);
+syncTrailVisibility();
+syncPanels();
+new ResizeObserver(() => { if (laneModel) drawLanes(laneModel); }).observe($("timeline"));
+// Playback clock and the only requestAnimationFrame loop.
+// While paused the loop moves the camera (flight, orbit damping) and redraws.
+// It does not pose the cell and it does not call __cell. renderAt runs only in play.
+
+let time = 0;
+let playing = false;
+let speed = 1;
+
+const PLAY_PATH = '<path d="M7 4.5v15l13-7.5z"/>';
+const PAUSE_PATH = '<path d="M7 4.5h3.5v15H7zM13.5 4.5H17v15h-3.5z"/>';
+
+function setPlaying(on) {
+  playing = !!on;
+  const icon = $("play-icon");
+  if (icon) icon.innerHTML = playing ? PAUSE_PATH : PLAY_PATH;
+  const btn = $("play");
+  if (btn) btn.setAttribute("aria-label", playing ? "Pause" : "Play");
+}
+
+$("play").addEventListener("click", () => {
+  if (mode !== "program") setMode("program");
+  const dur = current().DURATION;
+  if (!playing && time >= dur - 1e-4) time = 0;
+  setPlaying(!playing);
+});
+
+$("restart").addEventListener("click", () => {
+  time = 0;
+  renderAt(0);
+});
+
+document.querySelectorAll(".chips button").forEach((b) => {
+  b.addEventListener("click", () => {
+    const n = Number(b.dataset.speed);
+    if (!Number.isFinite(n) || n <= 0) return;
+    speed = n;
+    document.querySelectorAll(".chips button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  });
+});
+
+const timelineEl = $("timeline");
+let scrubbing = false;
+function scrubTo(e) {
+  const rect = timelineEl.getBoundingClientRect();
+  const dur = current().DURATION;
+  const u = clamp((e.clientX - rect.left) / Math.max(1, rect.width), 0, 1);
+  seek(u * dur);
+}
+timelineEl.addEventListener("pointerdown", (e) => {
+  scrubbing = true;
+  timelineEl.setPointerCapture(e.pointerId);
+  scrubTo(e);
+});
+timelineEl.addEventListener("pointermove", (e) => { if (scrubbing) scrubTo(e); });
+timelineEl.addEventListener("pointerup", () => { scrubbing = false; });
+timelineEl.addEventListener("pointercancel", () => { scrubbing = false; });
+timelineEl.addEventListener("keydown", (e) => {
+  if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+  e.preventDefault();
+  e.stopPropagation();
+  seek(time + (e.key === "ArrowRight" ? 0.5 : -0.5));
+});
+
+window.addEventListener("keydown", (e) => {
+  const tag = (document.activeElement && document.activeElement.tagName) || "";
+  if (e.code === "Space" && !/INPUT|SELECT|TEXTAREA|BUTTON/.test(tag)) {
+    e.preventDefault();
+    $("play").click();
+  }
+  if ((e.key === "ArrowRight" || e.key === "ArrowLeft") && !/INPUT|SELECT|TEXTAREA/.test(tag) && document.activeElement !== timelineEl) {
+    e.preventDefault();
+    seek(time + (e.key === "ArrowRight" ? 0.5 : -0.5));
+  }
+});
+
+let _playLast = performance.now();
+function playbackFrame(now) {
+  const dt = Math.min(0.05, Math.max(0, (now - _playLast) / 1000));
+  _playLast = now;
+  tickFlight(dt);
+  if (playing && mode === "program") {
+    const dur = current().DURATION;
+    time += dt * speed;
+    if (time >= dur) {
+      if ($("loop").checked) time %= dur || 1;
+      else {
+        time = dur;
+        setPlaying(false);
+      }
+    }
+    renderAt(time);
+  } else {
+    window.__uiSync?.(time);
+    controls.update();
+    renderFrame();
+  }
+  requestAnimationFrame(playbackFrame);
+}
+requestAnimationFrame(playbackFrame);
+// Scene contract hooks (SPEC.md §6 + mediu brief).
+// Assigned once, only here, after all scene modules have loaded.
+const _cellErrors = [];
+window.addEventListener("error", (e) => {
+  _cellErrors.push(String(e.message || e.error || e));
+});
+window.addEventListener("unhandledrejection", (e) => {
+  _cellErrors.push(String(e.reason || e));
+});
+
+const _markerTmp = new THREE.Vector3();
+function _readMarkerWorld(marker) {
+  if (!marker) return null;
+  world.updateMatrixWorld(true);
+  marker.getWorldPosition(_markerTmp);
+  return [_markerTmp.x, _markerTmp.y, _markerTmp.z];
+}
+
+function flange(name) {
+  const reg = window.__robotMarkers;
+  if (!reg) return null;
+  return _readMarkerWorld(reg[name]?.flange);
+}
+
+function tcp(name) {
+  const reg = window.__robotMarkers;
+  if (!reg) return null;
+  return _readMarkerWorld(reg[name]?.tcp);
+}
+
+function renderAt(t) {
+  poseAt(t);
+  window.__uiSync?.(t);
+  controls.update();
+  renderFrame();
+}
+
+function seek(t) {
+  setPlaying(false);
+  const dur = current().DURATION;
+  const n = Number(t);
+  time = clamp(Number.isFinite(n) ? n : 0, 0, dur);
+  renderAt(time);
+}
+
+const _params = new URLSearchParams(location.search);
+const _shotParam = _params.get("shot");
+const _tParam = _params.get("t");
+
+window.__cell = {
+  ready: true,
+  seek,
+  flange,
+  tcp,
+  errors: _cellErrors,
+  view: setView,
+  views,
+  camera: setCamera,
+};
+window.__cellCurrent = () => current();
+
+// ?shot= cuts the camera. An animated setView would still be in flight when a
+// still is taken, and the pause loop must not pose the cell back to t = 0.
+if (_shotParam && views[_shotParam]) {
+  document.documentElement.classList.add("shot-mode");
+  setCamera(views[_shotParam].pos, views[_shotParam].target);
+}
+if (_tParam !== null && _tParam !== "" && Number.isFinite(Number(_tParam))) {
+  seek(Number(_tParam));
+} else {
+  renderAt(0);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="data:,">
+<title>external</title>
+</head>
+<body>
+<img src="https://example.com/scene-fixture" alt="">
+<script>
+// @@logic-start
+function current() {
+  const n = 300;
+  const t = [];
+  const fTcp = [];
+  const uTcp = [];
+  for (let i = 0; i < n; i++) {
+    const s = i * 0.02;
+    t.push(s);
+    fTcp.push([0.10 + i * 0.001, 0.80, -0.40]);
+    uTcp.push([-0.20, 0.90, 0.30 + i * 0.001]);
+  }
+  return { DURATION: (n - 1) * 0.02, S: { dt: 0.02, t: t, fTcp: fTcp, uTcp: uTcp } };
+}
+// @@logic-end
+let seekT = 0;
+function indexAt(time) {
+  const S = current().S;
+  for (let i = 0; i < S.t.length; i++) if (Math.abs(S.t[i] - time) < 1e-9) return i;
+  let best = 0;
+  let bestD = Infinity;
+  for (let i = 0; i < S.t.length; i++) {
+    const d = Math.abs(S.t[i] - time);
+    if (d < bestD) { bestD = d; best = i; }
+  }
+  return best;
+}
+fetch("https://example.com/scene-fixture").catch(() => {});
+window.__cell = {
+  ready: true,
+  errors: [],
+  seek(t) { seekT = t; },
+  flange() { return null; },
+  tcp(name) {
+    const S = current().S;
+    const p = (name === "ur" ? S.uTcp : S.fTcp)[indexAt(seekT)];
+    return [p[0], p[1], p[2]];
+  },
+};
+</script>
+</body>
+</html>

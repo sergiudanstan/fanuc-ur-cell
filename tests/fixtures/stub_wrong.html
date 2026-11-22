@@ -1,0 +1,110 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Fixture overlap regression sample</title>
+<script>
+// @@logic-start
+const CELL = {
+  infeed:  { x0: -1.80, x1: 0.10, z: -0.60, top: 0.80, width: 0.30, speed: 0.10 },
+  pickWin: { x0: -0.45, x1: -0.05 },            // FANUC pick window on the infeed belt
+  outfeed: { x0: 0.30, x1: 1.60, z: -0.40, top: 0.80, width: 0.30, speed: 0.20 },
+  fanuc:   { base: [0.00, 0.60, -0.05], yaw: 0 },        // pedestal top = robot mounting plane
+  ur:      { base: [0.00, 0.80, 0.85], yaw: Math.PI },   // table top = robot mounting plane
+  fixture: { pos: [0.00, 0.80, 0.25] },                  // table top centre under the housing
+  rejectBin: { pos: [-0.45, 0.65, 0.20], size: [0.30, 0.25, 0.30] }, // pos = top-centre of opening
+  trays:   [ { pos: [0.55, 0.80, 0.95] }, { pos: [0.55, 0.80, 1.20] } ], // 2 × 3 grid, pitch 0.10
+  camera:  [0.00, 1.45, 0.25],
+  scanner: { center: [0.00, 0.85], warn: 1.20, protect: 0.60 }, // xz centre, radii
+  operator:{ aisle: [0.55, 2.40], station: [0.55, 1.70] },      // xz positions
+  fence:   { x0: -1.00, x1: 1.00, z0: -0.95, z1: 0.30, h: 2.00 }, // window at the fixture
+  housing: [0.12, 0.06, 0.08],                                   // x, y, z size
+};
+const N_PARTS = 12;
+const REJECTS = new Set([4, 9]);
+const ESC_X = -1.70;
+const INTERLOCK_LAG = 0;
+const rad = Math.PI / 180;
+const symmetricLimits = spans => spans.map(degrees => [-degrees * rad / 2, degrees * rad / 2]);
+const FANUC = {
+  name: "FANUC LR Mate 200iD/7L",
+  dh: { d1: 0.330, a1: 0.050, a2: 0.440, a3: 0.035, d4: 0.420, d6: 0.080 },
+  lim: symmetricLimits([340, 245, 430, 380, 250, 720]),
+  vmax: [370, 310, 410, 550, 545, 1000].map(speed => speed * rad),
+  tool: 0.100, vTcp: 1.50, aTcp: 6,
+};
+const UR = {
+  name: "UR5e",
+  dh: { d1: 0.1625, a2: -0.425, a3: -0.3922, d4: 0.1333, d5: 0.0997, d6: 0.0996 },
+  lim: symmetricLimits(Array(6).fill(720)),
+  vmax: Array(6).fill(180 * rad),
+  tool: 0.150, vTcp: 1.00, aTcp: 2.5,
+};
+
+const identity = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+function staticLinks([x, y, z], tool) {
+  return [[x, y, z], [x, y + 0.2, z], [x, y + 0.4, z],
+    [x, y + 0.6, z], [x, y + 0.6 + tool, z]];
+}
+function fanucLinks() { return staticLinks(CELL.fanuc.base, FANUC.tool); }
+function urLinks() { return staticLinks(CELL.ur.base, UR.tool); }
+function fanucFK() { return { p: fanucLinks().at(-1), R: identity }; }
+function urFK() { return { p: urLinks().at(-1), R: identity }; }
+function fanucIK(p, R, qRef) { return p[0] === 0 ? qRef : null; }
+function urIK(p, R, qRef) { return p[0] === 0 ? qRef : null; }
+
+function cycleFor(beltSpeed) {
+  const dt = 0.02;
+  const DURATION = 120;
+  const segs = { fanuc: [], ur: [], camera: [], operator: [] };
+  const zones = { fixture: { fanuc: [], ur: [], camera: [] } };
+  function add(actor, kind, t0, t1, tags = {}) {
+    const timeline = segs[actor];
+    const end = timeline.at(-1)?.t1 ?? 0;
+    if (end < t0) timeline.push({ t0: end, t1: t0, kind: actor === "operator" ? "away" : "wait" });
+    timeline.push({ kind, t0, t1, ...tags });
+  }
+  const parts = Array.from({ length: N_PARTS }, (_, k) => {
+    const start = 30 + 7 * k;
+    const reject = REJECTS.has(k);
+    const tags = { k };
+    add("fanuc", "pick", start, start + 0.3, tags);
+    add("fanuc", "load", start + 0.4, start + 0.9, tags);
+    // The UR enters the fixture before FANUC releases it.
+    const urStart = start + 0.6 - INTERLOCK_LAG;
+    add("ur", "cover", urStart, urStart + 0.4, tags);
+    for (let i = 0; i < 4; i++) add("ur", "screw", urStart + 0.4 + i, urStart + 1.4 + i, { k, i });
+    add("camera", "inspect", start + 5.1, start + 5.9, tags);
+    add("fanuc", "unload", start + 6, start + 6.4, tags);
+    add("fanuc", reject ? "place_bin" : "place_out", start + 6.4, start + 6.8, tags);
+    zones.fixture.fanuc.push([start + 0.4, start + 0.9], [start + 6, start + 6.4]);
+    zones.fixture.ur.push([urStart, urStart + 4.4]);
+    zones.fixture.camera.push([start + 5.1, start + 5.9]);
+    const p = [-0.25, 0.83, CELL.infeed.z];
+    return {
+      k, reject, release: start - (p[0] - ESC_X) / beltSpeed, pick: { t: start, tcp: [...p], part: p },
+      dest: reject ? "bin" : "out", screws: 4, cover: true,
+      end: { t: start + 6.8, p: reject ? [-0.45, 0.5, 0.2] : [1, 0.83, -0.4] },
+    };
+  });
+  add("operator", "swap", 70, 78);
+  for (const actor of Object.keys(segs)) {
+    add(actor, actor === "operator" ? "away" : "wait", segs[actor].at(-1).t1, DURATION);
+  }
+  const t = Array.from({ length: DURATION / dt + 1 }, (_, j) => j * dt);
+  const joints = () => Array(6).fill(0);
+  const opIn = t.map(time => time >= 70 && time < 78);
+  const S = {
+    dt, t, fq: t.map(joints), uq: t.map(joints), fTcp: t.map(() => fanucFK().p),
+    uTcp: t.map(() => urFK().p), opIn,
+    fGrip: t.map(() => 0), fSwivel: t.map(() => 0), fHeld: t.map(() => [null, null]),
+    opPos: opIn.map(inside => inside ? CELL.operator.station : CELL.operator.aisle),
+  };
+  const util = Object.fromEntries(["fanuc", "ur", "camera"].map(actor =>
+    [actor, segs[actor].filter(s => s.kind !== "wait").reduce((sum, s) => sum + s.t1 - s.t0, 0) / DURATION]));
+  return { beltSpeed, DURATION, parts, segs, zones, S, trays: { swaps: [{ t0: 70, t1: 78, tray: 0 }] },
+    minClear: { m: 0.785, at: 0 }, util };
+}
+let model;
+function rebuild(speed) { model = cycleFor(speed); return model; }
+function current() { return model; }
+// @@logic-end
+</script>
