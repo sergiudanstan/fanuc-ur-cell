@@ -21,6 +21,8 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24"
+      - name: Install test dependencies from the lockfile (tests/scene.mjs drives Chrome through playwright-core)
+        run: npm ci --ignore-scripts
       - name: Committed index.html must equal a fresh build from src/
         run: |
           node tools/build.mjs
