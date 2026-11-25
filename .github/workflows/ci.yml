@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Least privilege by default; no job here needs to write anything.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: logic tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - name: Committed index.html must equal a fresh build from src/
+        run: |
+          node tools/build.mjs
+          git diff --exit-code -- index.html
+      - name: schedule, mutexes, IK, joint limits, clearance, determinism and the fixture-overlap perturbation
+        run: node tests/run.mjs
+      - name: drawn TCP against the logic samples in headless Chrome, with every non-127.0.0.1 request blocked
+        run: node tests/scene.mjs
+      - name: "Negative probe, must fail with exit 1: node tests/run.mjs --perturb"
+        # fixture interlock shifted: mutex and clearance checks must fail. Exit 2 means the probe itself is ineffective, so only exactly 1 passes.
+        run: |
+          set +e
+          node tests/run.mjs --perturb > /dev/null 2>&1
+          rc=$?
+          [ "$rc" -eq 1 ] || { echo "expected exit 1, got $rc" >&2; exit 1; }
+      - name: "Negative probe, must fail with exit 1: node tests/scene.mjs --fixture tests/fixtures/tcp_off_fanuc.html"
+        # a page whose FANUC TCP is off must fail the scene test. Exit 2 means the probe itself is ineffective, so only exactly 1 passes.
+        run: |
+          set +e
+          node tests/scene.mjs --fixture tests/fixtures/tcp_off_fanuc.html > /dev/null 2>&1
+          rc=$?
+          [ "$rc" -eq 1 ] || { echo "expected exit 1, got $rc" >&2; exit 1; }
+      - name: "Negative probe, must fail with exit 1: node tests/scene.mjs --fixture tests/fixtures/external.html"
+        # a page making an external request must fail the scene test. Exit 2 means the probe itself is ineffective, so only exactly 1 passes.
+        run: |
+          set +e
+          node tests/scene.mjs --fixture tests/fixtures/external.html > /dev/null 2>&1
+          rc=$?
+          [ "$rc" -eq 1 ] || { echo "expected exit 1, got $rc" >&2; exit 1; }
+
+  smoke:
+    name: page smoke test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - name: Install test dependencies from the lockfile
+        run: npm ci --ignore-scripts
+      - name: Load index.html in headless Chrome, fail on any page error
+        # Chrome is preinstalled on the runner image; playwright-core drives it,
+        # so no browser download is needed.
+        run: node tests/smoke.mjs
+
+  audit:
+    name: security audit
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - name: Install audit tooling (hash-pinned)
+        run: python -m pip install --require-hashes -r .github/requirements-ci.lock
+      - name: Known vulnerabilities in the CI toolchain
+        run: pip-audit --strict --no-deps -r .github/requirements-ci.lock --progress-spinner off
+      - name: Known vulnerabilities in npm dependencies
+        run: npm audit --audit-level=low
+      - name: Audit the workflows themselves
+        run: zizmor --format plain .github/workflows/

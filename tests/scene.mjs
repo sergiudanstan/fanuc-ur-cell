@@ -132,7 +132,8 @@ try {
   }
   check(true, `logic samples ${n}`);
 
-  const { chromium } = await import("/opt/homebrew/lib/node_modules/playwright/index.mjs");
+  // playwright-core from node_modules (CI, npm ci); the Homebrew global install is the local fallback.
+  const { chromium } = await import("playwright-core").catch(() => import("/opt/homebrew/lib/node_modules/playwright/index.mjs"));
   server = startServer();
   const port = await serverPort(server);
   const origin = `http://127.0.0.1:${port}`;
