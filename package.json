@@ -1,0 +1,15 @@
+{
+  "name": "fanuc-ur-cell",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Browser digital twin of a FANUC LR Mate + UR5e assembly cell",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "test": "node tests/run.mjs && node tests/smoke.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "1.65.0"
+  }
+}

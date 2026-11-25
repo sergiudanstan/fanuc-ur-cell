@@ -1,5 +1,12 @@
 # FANUC + UR assembly cell
 
+[![CI](https://github.com/sergiudanstan/fanuc-ur-cell/actions/workflows/ci.yml/badge.svg)](https://github.com/sergiudanstan/fanuc-ur-cell/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/sergiudanstan/fanuc-ur-cell/actions/workflows/codeql.yml/badge.svg)](https://github.com/sergiudanstan/fanuc-ur-cell/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/sergiudanstan/fanuc-ur-cell/badge)](https://scorecard.dev/viewer/?uri=github.com/sergiudanstan/fanuc-ur-cell)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+**Live:** https://sergiudanstan.github.io/fanuc-ur-cell/
+
 A browser digital twin of a small assembly cell. Twelve aluminium gear-motor housings (120 × 80 × 60 mm, 0.4 kg) each receive a cover and four screws. An escapement releases the housings onto a moving infeed belt. A FANUC LR Mate 200iD/7L inside the guard line-tracks the belt. Two grippers sit back to back on a pneumatic 180° rotator: the robot picks the next housing while the cobot is still at the fixture, then in one visit unloads the finished housing, swivels, and loads the new one. Housings that pass inspection leave on the outfeed belt. Two of the twelve fail inspection and go to a reject bin. A UR5e on the open side places each cover and drives the four screws. A fixed camera above the fixture inspects the assembly after the cobot has left. When a cover tray is empty, an operator walks in from the aisle, swaps the tray inside the scanner warning field, and walks out. While the operator is in that field the cobot keeps its TCP at or below 0.25 m/s. The operator does not enter the protective field.
 
 three.js is stored in this folder, so the page is served locally. From this directory:
@@ -34,3 +41,7 @@ node tools/record.mjs          # cycle film
 `src/page.html` is the shell. `src/js/*.js` are concatenated in lexical order into one module by `tools/build.mjs`. `index.html` is generated. Do not edit it by hand. `vendor/three/` holds three.js 0.186.1 from npm, with the MIT license in the tree.
 
 FANUC, LR Mate, Universal Robots and UR5e are trademarks of their owners.
+
+## Development
+
+`index.html` is generated from `src/`; CI fails if the committed copy differs from a fresh `node tools/build.mjs`. `npm ci && npm test` runs the logic tests and the headless smoke test (needs Google Chrome). See [CONTRIBUTING.md](CONTRIBUTING.md) for branches and releases, [SECURITY.md](SECURITY.md) for reporting vulnerabilities, and [CHANGELOG.md](CHANGELOG.md) for history.
